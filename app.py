@@ -258,6 +258,12 @@ def check_relevance(text):
     """Returns (is_review, review_score, method)."""
     if len(text.split()) < 4:
         return False, 0.0, "length"
+    # Text that mentions two or more different hotel areas is clearly about a stay, so accept it
+    # straight away. The zero-shot model tends to reject plain or lukewarm reviews
+    # ("The room was okay. Breakfast was average."), so it is only used for less obvious text.
+    areas = {asp for part in split_review(text) for asp in detect_aspects(part)}
+    if len(areas) >= 2:
+        return True, 1.0, "keywords"
     pipe = load_relevance_model(RELEVANCE_MODEL)
     if pipe is None:
         has_aspect = any(detect_aspects(s) for s in split_review(text))
@@ -918,8 +924,9 @@ def page_about():
     steps = [
         ("Split the review into parts", "Sentences are split at words like 'but' and 'and', so one review "
                                          "can praise the room and criticise the breakfast."),
-        ("Check that it's a hotel review", f"A zero-shot model filters out unrelated text "
-                                           f"(it needs a score of {RELEVANCE_THRESHOLD:.2f} or more)."),
+        ("Check that it's a hotel review", f"Text that mentions two or more hotel areas is accepted. Anything "
+                                           f"else is checked by a zero-shot model, which needs a score of "
+                                           f"{RELEVANCE_THRESHOLD:.2f} or more."),
         ("Find what each part is about", "Keywords match each part to one or more of seven areas: "
                                              + ", ".join(ASPECTS) + "."),
         ("Predict the sentiment", "A fine-tuned RoBERTa model labels each area as positive, negative or neutral."),
