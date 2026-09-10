@@ -882,7 +882,7 @@ def page_about():
             (Chebolu et al., 2024). The dashboard comes from {BENCHMARK_REVIEWS:,} other hotel reviews.</p></div></div>
           <div class="rr-h" style="margin-top:1rem">Limitations</div>
           <div class="rr-issue"><div><p style="margin:0">Keyword matching can miss or mislabel areas. Neutral results
-            are the least reliable. It works in English only.</p></div></div>
+            are the least reliable. It works in English only.</p></div></div>""")
          
 
 
