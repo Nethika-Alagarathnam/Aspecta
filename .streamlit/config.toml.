@@ -1,16 +1,16 @@
 [theme]
 base = "light"
-primaryColor = "#1F3B57"
-backgroundColor = "#F8F8F6"
-secondaryBackgroundColor = "#EEF0EC"
-textColor = "#17202A"
-linkColor = "#1F3B57"
-borderColor = "#DEDFDA"
+primaryColor = "#008080"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F9FB"
+textColor = "#23284A"
+linkColor = "#000080"
+borderColor = "#D5E8EE"
 showWidgetBorder = true
-baseRadius = "0.55rem"
-font = "Public Sans:https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap"
-headingFont = "Marcellus:https://fonts.googleapis.com/css2?family=Marcellus&display=swap"
-headingFontWeights = 400
+baseRadius = "0.6rem"
+font = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+headingFont = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+headingFontWeights = [800, 700, 700]
 
 [client]
 toolbarMode = "viewer"
