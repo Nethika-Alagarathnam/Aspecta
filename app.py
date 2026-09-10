@@ -439,8 +439,8 @@ def page_title(title, text):
 
 def footer():
     st.html("""<div class="rr-foot">
-        <span><b>RoomRead</b> &copy; 2026 Nethika Alagarathnam</span>
-        <span>MSc in Data Science and Artificial Intelligence, PGIS, University of Peradeniya</span>
+        <span><b>RoomRead</b> &copy; 2026</span>
+        <span> Nethika Alagarathnam</span>
       </div>""")
 
 
@@ -883,8 +883,7 @@ def page_about():
           <div class="rr-h" style="margin-top:1rem">Limitations</div>
           <div class="rr-issue"><div><p style="margin:0">Keyword matching can miss or mislabel areas. Neutral results
             are the least reliable. It works in English only.</p></div></div>
-          <div class="rr-h" style="margin-top:1rem">Author</div>
-          <div class="rr-issue"><div><b>Nethika Alagarathnam</b></div>""")
+         
 
 
 # =====================================================================
