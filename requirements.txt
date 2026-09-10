@@ -1,6 +1,0 @@
-streamlit
-torch
-transformers
-pandas
-accelerate
-sentencepiece
