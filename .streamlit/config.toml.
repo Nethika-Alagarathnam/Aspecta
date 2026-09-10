@@ -1,0 +1,19 @@
+[theme]
+base = "light"
+primaryColor = "#1F3B57"
+backgroundColor = "#F8F8F6"
+secondaryBackgroundColor = "#EEF0EC"
+textColor = "#17202A"
+linkColor = "#1F3B57"
+borderColor = "#DEDFDA"
+showWidgetBorder = true
+baseRadius = "0.55rem"
+font = "Public Sans:https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap"
+headingFont = "Marcellus:https://fonts.googleapis.com/css2?family=Marcellus&display=swap"
+headingFontWeights = 400
+
+[client]
+toolbarMode = "viewer"
+
+[server]
+maxUploadSize = 20
