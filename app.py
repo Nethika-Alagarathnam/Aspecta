@@ -2,11 +2,11 @@
 RoomRead — aspect-based sentiment analysis for hotel reviews.
 
 Pages
-  Priorities       Ranking of service areas by share of reviews with a negative mention
-  Check a review   Sentence-by-sentence analysis of one pasted review
-  Analyse a file   Upload a CSV / Excel / TXT of reviews and get your own ranking
-  Model evidence   Test-set results for RoBERTa, BERT and zero-shot BART
-  About            Pipeline, data, limitations, author
+  Dashboard        What guests complain about most, from 31,219 reviews
+  Check a review   Analyse one pasted review sentence by sentence
+  Upload reviews   Upload a CSV / Excel / TXT file and get your own ranking
+  Model results    Test-set scores for RoBERTa, BERT and zero-shot BART
+  About            How it works, data, limitations, author
 
 Inference logic (sentence split, keyword aspect tagger, input format, relevance
 gate at 0.55) is kept identical to the previously deployed app so predictions
@@ -27,8 +27,7 @@ import streamlit as st
 APP_DIR = Path(__file__).parent
 
 st.set_page_config(
-    page_title="RoomRead | Hotel review priorities",
-    page_icon="🏨",
+    page_title="AspectaRoomRead | Hotel review priorities",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -96,20 +95,13 @@ ASPECT_KEYWORDS = {
 ASPECTS = list(ASPECT_KEYWORDS)
 
 ASPECT_ACTIONS = {
-    "Room quality": "Spot-check rooms before check-in for cleanliness, bed and bathroom condition, "
-                    "noise and air-conditioning. Start with the rooms that come up most in complaints.",
-    "Overall": "These complaints don't point at one department. Read a sample in full to find "
-               "the pattern behind general disappointment.",
-    "Food & Beverage": "Check breakfast at peak time: food temperature, how fast the buffet is "
-                       "refilled, and variety across a week.",
-    "Value for money": "Compare what the rate promises with what guests get. Make included extras "
-                       "visible at booking and at check-in.",
-    "Staff & Service": "Review how the front desk handles complaints and how long guest requests "
-                       "take to close.",
-    "Facilities": "Keep a fault log for Wi-Fi, lifts, parking and the pool with a fix-by date, "
-                  "and tell guests what is out of service.",
-    "Location": "The building can't move, but expectations can. Describe the location honestly "
-                "in listings and offer directions or transport.",
+    "Room quality": "Check rooms before guests arrive: cleaning, beds, bathrooms, noise and air-conditioning.",
+    "Overall": "Read a few of these reviews in full. They usually describe a general letdown rather than one problem.",
+    "Food & Beverage": "Look at breakfast during busy hours. Is the food warm, and is the buffet refilled quickly?",
+    "Value for money": "Make it clear what the price includes, both when guests book and when they check in.",
+    "Staff & Service": "Coach front-desk staff on handling complaints and keep track of how fast requests are solved.",
+    "Facilities": "Keep a list of Wi-Fi, lift, parking and pool problems and fix each one by a set date.",
+    "Location": "Describe the location honestly online and give guests clear directions or transport options.",
 }
 
 SAMPLES = {
@@ -125,14 +117,19 @@ SAMPLES = {
 }
 
 # Colours (kept in sync with .streamlit/config.toml)
-INK = "#17202A"
-MUTED = "#56616C"
-NIGHT = "#1F3B57"
-BRASS = "#A27B3F"
-HAIR = "#DEDFDA"
-SENT_COLOURS = {"negative": "#B3261E", "positive": "#2F7A55", "neutral": "#7C8591", "mixed": "#B7791F"}
-TIER_COLOURS = {"Critical": "#A61E17", "High": "#D9776A", "Watch": "#7D8B99"}
-BODY_FONT = "Public Sans, system-ui, sans-serif"
+TEAL = "#008080"
+BLUE_GREEN = "#088F8F"
+NAVY = "#000080"
+MIDNIGHT = "#191970"
+LIGHT_BLUE = "#ADD8E6"
+ROBIN = "#96DED1"
+TEXT = "#23284A"
+MUTED = "#5B6380"
+BORDER = "#D5E8EE"
+SOFT_BG = "#F2F9FB"
+SENT_COLOURS = {"positive": TEAL, "negative": "#D64545", "neutral": "#8A94A6", "mixed": NAVY}
+TIER_COLOURS = {"Critical": MIDNIGHT, "High": TEAL, "Watch": ROBIN}
+BODY_FONT = "Nunito, 'Segoe UI', Arial, sans-serif"
 
 
 # =====================================================================
@@ -326,129 +323,132 @@ MCNEMAR = pd.DataFrame({
 })
 MCNEMAR["Result at α = 0.05"] = np.where(MCNEMAR["p-value"] < 0.05, "Significant", "Not significant")
 
-
 # =====================================================================
 # STYLE
 # =====================================================================
 CSS = f"""
 <style>
-.block-container {{ max-width: 1180px; padding-top: 5rem; padding-bottom: 3rem; }}
-h1, h2, h3 {{ letter-spacing: 0.01em; }}
+.block-container {{ max-width: 1150px; padding-top: 4.6rem; padding-bottom: 2rem; }}
 
-.rr-mast {{ display:flex; align-items:flex-end; justify-content:space-between; gap:2rem;
-            border-bottom:1px solid {HAIR}; padding-bottom:1.1rem; margin-bottom:0.6rem; flex-wrap:wrap; }}
-.rr-brand {{ font-family:'Marcellus', Georgia, serif; font-size:2.7rem; line-height:1; color:{INK}; }}
-.rr-brand small {{ display:block; font-family:{BODY_FONT}; font-size:0.95rem; color:{MUTED};
-                   margin-top:0.55rem; letter-spacing:0; max-width:62ch; line-height:1.45; }}
-.rr-key {{ width:54px; height:54px; flex:none; }}
+/* Top bar */
+header[data-testid="stHeader"] {{ background: {MIDNIGHT} !important; }}
+header[data-testid="stHeader"] a[data-testid="stTopNavLink"] {{ border-radius: 8px; }}
+header[data-testid="stHeader"] a[data-testid="stTopNavLink"] span {{ color: #FFFFFF !important; }}
+header[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover {{ background: rgba(150,222,209,0.18) !important; }}
+header[data-testid="stHeader"] a[data-testid="stTopNavLink"][aria-current="page"] {{ background: {TEAL} !important; }}
+header[data-testid="stHeader"] button, header[data-testid="stHeader"] [data-testid="stMainMenuButton"] {{ color: #FFFFFF !important; }}
 
-.rr-lead {{ font-family:'Marcellus', Georgia, serif; font-size:2.05rem; line-height:1.18; color:{INK};
-            margin:0.4rem 0 0.35rem; max-width:30ch; }}
-.rr-sub {{ color:{MUTED}; font-size:1.02rem; max-width:68ch; margin:0 0 1.2rem; line-height:1.55; }}
-.rr-facts {{ display:flex; gap:2.6rem; flex-wrap:wrap; padding:0.9rem 0 1.1rem;
-             border-top:1px solid {HAIR}; border-bottom:1px solid {HAIR}; margin-bottom:1.6rem; }}
-.rr-fact b {{ display:block; font-size:1.35rem; color:{INK}; font-weight:600; }}
-.rr-fact span {{ color:{MUTED}; font-size:0.86rem; }}
+header[data-testid="stHeader"] [data-testid="stIconMaterial"] {{ color: #FFFFFF !important; }}
+/* Mobile menu (sidebar) */
+section[data-testid="stSidebar"] {{ background: {MIDNIGHT} !important; }}
+section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"] span,
+section[data-testid="stSidebar"] [data-testid="stIconMaterial"] {{ color: #FFFFFF !important; }}
+section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current="page"] {{ background: {TEAL} !important; }}
 
-.rr-h {{ font-family:'Marcellus', Georgia, serif; font-size:1.3rem; color:{INK}; margin:0 0 0.3rem; }}
-.rr-note {{ color:{MUTED}; font-size:0.86rem; margin:0 0 0.8rem; line-height:1.5; }}
+/* Hero */
+.rr-hero {{ background: {TEAL}; color: #fff; border-radius: 16px; padding: 2rem 2.2rem;
+            display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; }}
+.rr-hero h1 {{ color: #fff; font-size: 2rem; font-weight: 800; margin: 0 0 .35rem; padding: 0; }}
+.rr-hero p {{ color: #E6F7F5; font-size: 1.05rem; margin: 0; max-width: 58ch; }}
+.rr-hero a {{ background: #fff; color: {MIDNIGHT} !important; text-decoration: none; font-weight: 700;
+              padding: .7rem 1.3rem; border-radius: 10px; white-space: nowrap; }}
+.rr-hero a:hover {{ background: {ROBIN}; }}
 
-.rr-rank {{ display:grid; grid-template-columns:50px 1fr; gap:16px; align-items:center;
-            padding:13px 0; border-bottom:1px solid {HAIR}; }}
-.rr-rank:last-child {{ border-bottom:none; }}
-.rr-plate {{ width:46px; height:46px; border-radius:9px; display:flex; align-items:center; justify-content:center;
-             font-family:'Marcellus', Georgia, serif; font-size:1.45rem; color:#FFF8EA;
-             background:linear-gradient(150deg,#CDA96C 0%,{BRASS} 52%,#7E5B2B 100%);
-             box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.18); }}
-.rr-row1 {{ display:flex; justify-content:space-between; align-items:baseline; gap:1rem; }}
-.rr-name {{ font-weight:600; color:{INK}; font-size:1.02rem; }}
-.rr-pct {{ font-weight:600; color:{INK}; font-variant-numeric:tabular-nums; font-size:1.02rem; }}
-.rr-bar {{ height:7px; background:#E9EAE5; border-radius:4px; margin:7px 0 6px; overflow:hidden; }}
-.rr-bar span {{ display:block; height:100%; border-radius:4px; }}
-.rr-meta {{ display:flex; justify-content:space-between; color:{MUTED}; font-size:0.82rem; gap:1rem; }}
-.rr-tier {{ font-weight:600; }}
-.rr-delta-up {{ color:#B3261E; font-weight:600; }}
-.rr-delta-down {{ color:#2F7A55; font-weight:600; }}
+/* Page title */
+.rr-title h1 {{ color: {MIDNIGHT}; font-size: 1.9rem; font-weight: 800; margin: 0 0 .25rem; padding: 0; }}
+.rr-title p {{ color: {MUTED}; font-size: 1.02rem; margin: 0 0 1rem; max-width: 70ch; }}
+.rr-h {{ color: {MIDNIGHT}; font-size: 1.2rem; font-weight: 800; margin: .2rem 0 .7rem; }}
 
-.rr-step {{ border-left:3px solid {BRASS}; padding:0.1rem 0 0.1rem 0.9rem; }}
-.rr-step b {{ color:{INK}; }}
-.rr-step p {{ color:{MUTED}; font-size:0.9rem; margin:0.3rem 0 0; line-height:1.5; }}
+/* Cards */
+.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 1.2rem 0 1.6rem; }}
+.rr-card {{ background: #fff; border: 1px solid {BORDER}; border-radius: 12px; padding: 1rem 1.1rem; }}
+.rr-card .v {{ color: {MIDNIGHT}; font-size: 1.55rem; font-weight: 800; line-height: 1.2; }}
+.rr-card .l {{ color: {MUTED}; font-size: .88rem; margin-top: .2rem; }}
+.rr-card.accent {{ background: {SOFT_BG}; border-color: {ROBIN}; }}
 
-.rr-verdict {{ font-size:1.12rem; color:{INK}; margin:0.3rem 0 1rem; }}
-.rr-chips {{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:1.3rem; }}
-.rr-chip {{ border:1px solid {HAIR}; background:#fff; border-radius:10px; padding:9px 14px; min-width:150px; }}
-.rr-chip .a {{ font-size:0.82rem; color:{MUTED}; }}
-.rr-chip .s {{ font-weight:700; font-size:1rem; text-transform:capitalize; }}
+/* Top issues list */
+.rr-issue {{ display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid {BORDER};
+             border-radius: 12px; padding: .95rem 1rem; margin-bottom: 10px; }}
+.rr-num {{ flex: none; width: 34px; height: 34px; border-radius: 50%; background: {TEAL}; color: #fff;
+           font-weight: 800; display: flex; align-items: center; justify-content: center; }}
+.rr-issue b {{ color: {MIDNIGHT}; }}
+.rr-issue .pct {{ color: {TEAL}; font-weight: 800; margin-left: .35rem; }}
+.rr-issue p {{ color: {MUTED}; font-size: .9rem; margin: .25rem 0 0; line-height: 1.45; }}
 
-.rr-read {{ background:#fff; border:1px solid {HAIR}; border-radius:12px; padding:1.1rem 1.3rem;
-            font-size:1.04rem; line-height:2.05; color:{INK}; max-width:80ch; }}
-.rr-s-positive {{ background:linear-gradient(transparent 58%, rgba(47,122,85,.20) 58%); }}
-.rr-s-negative {{ background:linear-gradient(transparent 58%, rgba(179,38,30,.20) 58%); }}
-.rr-s-neutral  {{ background:linear-gradient(transparent 58%, rgba(124,133,145,.25) 58%); }}
-.rr-s-mixed    {{ background:linear-gradient(transparent 58%, rgba(183,121,31,.25) 58%); }}
-.rr-s-none     {{ color:{MUTED}; }}
-.rr-tag {{ display:inline-block; font-size:0.7rem; line-height:1.35; padding:1px 7px; margin:0 3px;
-           border-radius:999px; border:1px solid currentColor; vertical-align:2px; font-weight:600; }}
-.rr-legend {{ display:flex; gap:1.2rem; flex-wrap:wrap; font-size:0.82rem; color:{MUTED}; margin:0.6rem 0 1.4rem; }}
-.rr-legend i {{ display:inline-block; width:18px; height:8px; border-radius:2px; margin-right:6px; vertical-align:1px; }}
+/* Review result */
+.rr-summary {{ background: {SOFT_BG}; border-left: 5px solid {TEAL}; border-radius: 8px; padding: .8rem 1rem;
+               color: {TEXT}; font-size: 1.05rem; margin: .4rem 0 1rem; }}
+.rr-tiles {{ display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1.2rem; }}
+.rr-tile {{ background: #fff; border: 1px solid {BORDER}; border-top-width: 4px; border-radius: 10px;
+            padding: .6rem .9rem; min-width: 145px; }}
+.rr-tile .a {{ color: {MUTED}; font-size: .85rem; }}
+.rr-tile .s {{ font-weight: 800; text-transform: capitalize; }}
+.rr-read {{ background: #fff; border: 1px solid {BORDER}; border-radius: 12px; padding: 1rem 1.2rem;
+            font-size: 1.03rem; line-height: 2; color: {TEXT}; }}
+.rr-s-positive {{ background: rgba(0,128,128,.14); border-radius: 4px; padding: 1px 2px; }}
+.rr-s-negative {{ background: rgba(214,69,69,.14); border-radius: 4px; padding: 1px 2px; }}
+.rr-s-neutral  {{ background: rgba(138,148,166,.18); border-radius: 4px; padding: 1px 2px; }}
+.rr-s-mixed    {{ background: rgba(0,0,128,.10); border-radius: 4px; padding: 1px 2px; }}
+.rr-s-none     {{ color: {MUTED}; }}
+.rr-tag {{ display: inline-block; font-size: .72rem; font-weight: 700; color: #fff; padding: 0 8px;
+           margin: 0 4px; border-radius: 999px; line-height: 1.6; vertical-align: 1px; }}
+.rr-legend {{ display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: .85rem; color: {MUTED}; margin: .6rem 0 1.2rem; }}
+.rr-legend i {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }}
 
-.rr-steps {{ counter-reset: step; list-style:none; padding:0 !important; margin:0.5rem 0 0 !important; }}
-.rr-steps li {{ counter-increment: step; display:grid; grid-template-columns:40px 1fr; gap:12px;
-               padding:0.8rem 0; margin:0 !important; border-bottom:1px solid {HAIR}; }}
-.rr-steps li::before {{ content: counter(step); font-family:'Marcellus', Georgia, serif; font-size:1.4rem;
-                        color:{BRASS}; }}
-.rr-steps b {{ color:{INK}; }}
-.rr-steps p {{ margin:0.2rem 0 0; color:{MUTED}; font-size:0.92rem; line-height:1.5; }}
+/* Steps (About) */
+.rr-step {{ display: flex; gap: 14px; align-items: flex-start; padding: .7rem 0; border-bottom: 1px solid {BORDER}; }}
+.rr-step:last-child {{ border-bottom: none; }}
+.rr-step b {{ color: {MIDNIGHT}; }}
+.rr-step p {{ color: {MUTED}; margin: .15rem 0 0; font-size: .93rem; }}
 
-.rr-foot {{ margin-top:3rem; padding-top:1rem; border-top:1px solid {HAIR}; color:{MUTED}; font-size:0.8rem; }}
+.rr-foot {{ margin-top: 2.5rem; background: {MIDNIGHT}; color: #DCE4F5; border-radius: 12px;
+            padding: 1rem 1.3rem; font-size: .85rem; display: flex; justify-content: space-between;
+            flex-wrap: wrap; gap: .5rem; }}
+.rr-foot b {{ color: #fff; }}
 
-@media (max-width: 640px) {{
-  .rr-brand {{ font-size:2.1rem; }}
-  .rr-lead {{ font-size:1.6rem; }}
-  .rr-facts {{ gap:1.4rem; }}
-  .rr-key {{ display:none; }}
+@media (max-width: 800px) {{
+  .rr-cards {{ grid-template-columns: repeat(2, 1fr); }}
+  .rr-hero {{ padding: 1.4rem; }}
+  .rr-hero h1 {{ font-size: 1.6rem; }}
 }}
 </style>
 """
 
-KEY_SVG = f"""
-<svg class="rr-key" viewBox="0 0 54 54" aria-hidden="true">
-  <rect x="9" y="3" width="36" height="48" rx="11" fill="none" stroke="{BRASS}" stroke-width="2"/>
-  <circle cx="27" cy="13" r="3.5" fill="none" stroke="{BRASS}" stroke-width="2"/>
-  <text x="27" y="37" text-anchor="middle" font-family="Marcellus, Georgia, serif" font-size="14" fill="{BRASS}">RR</text>
-</svg>
-"""
+LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="190" height="40" viewBox="0 0 190 40">
+<rect x="3" y="5" width="26" height="31" rx="3" fill="#96DED1"/>
+<rect x="8" y="10" width="5" height="5" rx="1" fill="#191970"/><rect x="19" y="10" width="5" height="5" rx="1" fill="#191970"/>
+<rect x="8" y="19" width="5" height="5" rx="1" fill="#191970"/><rect x="19" y="19" width="5" height="5" rx="1" fill="#191970"/>
+<rect x="13" y="28" width="6" height="8" rx="1" fill="#191970"/>
+<text x="38" y="28" font-family="Nunito, Segoe UI, Arial, sans-serif" font-size="22" font-weight="800" fill="#FFFFFF">RoomRead</text>
+</svg>"""
 
 
 def esc(x):
     return html.escape(str(x))
 
 
-def masthead():
+def setup_page():
+    import base64
+    st.logo("data:image/svg+xml;base64," + base64.b64encode(LOGO_SVG.encode()).decode(), size="large")
     st.html(CSS)
-    st.html(
-        f"""<div class="rr-mast">
-              <div class="rr-brand">RoomRead
-                <small>Reads hotel reviews sentence by sentence, works out which part of the stay each
-                remark is about, and ranks what guests complain about most.</small>
-              </div>{KEY_SVG}
-            </div>"""
-    )
+
+
+def page_title(title, text):
+    st.html(f'<div class="rr-title"><h1>{esc(title)}</h1><p>{text}</p></div>')
 
 
 def footer():
-    st.html(
-        """<div class="rr-foot">RoomRead, research prototype by Nethika Alagarathnam,
-        MSc in Data Science and Artificial Intelligence, PGIS, University of Peradeniya.
-        Predictions can be wrong: read flagged lines yourself before acting on them.</div>"""
-    )
+    st.html("""<div class="rr-foot">
+        <span><b>RoomRead</b> &copy; 2026 Nethika Alagarathnam</span>
+        <span>MSc in Data Science and Artificial Intelligence, PGIS, University of Peradeniya</span>
+      </div>""")
 
 
 def plotly_base(fig, height):
     fig.update_layout(
-        height=height, margin=dict(l=8, r=8, t=10, b=8),
+        height=height, margin=dict(l=8, r=16, t=10, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family=BODY_FONT, size=13, color=INK),
+        font=dict(family=BODY_FONT, size=13, color=TEXT),
         hoverlabel=dict(font_family=BODY_FONT),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
     )
@@ -459,115 +459,85 @@ def show_chart(fig):
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 
-def ranking_rows(df, benchmark=None):
-    rows = []
-    for _, r in df.iterrows():
-        pct = float(r["pct_of_reviews"])
-        t = tier(pct)
-        delta = ""
-        if benchmark is not None and r["aspect_group"] in benchmark:
-            d = pct - benchmark[r["aspect_group"]]
-            cls = "rr-delta-up" if d > 0 else "rr-delta-down"
-            delta = f'<span class="{cls}">{d:+.1f} pts vs benchmark</span>'
-        rows.append(f"""
-        <div class="rr-rank">
-          <div class="rr-plate">{int(r['priority_rank'])}</div>
-          <div>
-            <div class="rr-row1"><span class="rr-name">{esc(r['aspect_group'])}</span>
-                 <span class="rr-pct">{pct:.1f}%</span></div>
-            <div class="rr-bar"><span style="width:{min(pct, 100):.1f}%;background:{TIER_COLOURS[t]}"></span></div>
-            <div class="rr-meta"><span>{int(r['reviews_with_negative_mentions']):,} reviews with a complaint</span>
-                 <span>{delta or f'<span class="rr-tier" style="color:{TIER_COLOURS[t]}">{t}</span>'}</span></div>
-          </div>
-        </div>""")
-    st.html("<div>" + "".join(rows) + "</div>")
-
-
-def pareto_chart(df):
-    total = df["reviews_with_negative_mentions"].sum()
-    share = 100 * df["reviews_with_negative_mentions"] / total
-    cum = share.cumsum()
+def area_bar_chart(df, benchmark=None):
+    d = df.iloc[::-1]
     fig = go.Figure()
-    fig.add_bar(x=df["aspect_group"], y=share, name="Share of negative mentions",
-                marker_color=[TIER_COLOURS[tier(p)] for p in df["pct_of_reviews"]],
-                hovertemplate="%{x}<br>%{y:.1f}% of negative mentions<extra></extra>")
-    fig.add_scatter(x=df["aspect_group"], y=cum, name="Cumulative share", mode="lines+markers",
-                    line=dict(color=NIGHT, width=2.5), marker=dict(size=7), yaxis="y2",
-                    hovertemplate="Top %{x}: %{y:.1f}% cumulative<extra></extra>")
-    fig.update_layout(
-        yaxis=dict(title="% of negative mentions", gridcolor="#ECECE8", ticksuffix="%"),
-        yaxis2=dict(overlaying="y", side="right", range=[0, 105], ticksuffix="%", showgrid=False),
-        xaxis=dict(tickangle=-30),
-        bargap=0.35,
-    )
-    return plotly_base(fig, 390)
+    if benchmark is not None:
+        fig.add_bar(y=d["aspect_group"], x=[benchmark.get(a, 0) for a in d["aspect_group"]], orientation="h",
+                    name=f"All {BENCHMARK_REVIEWS:,} reviews", marker_color=LIGHT_BLUE,
+                    hovertemplate="%{y}: %{x:.1f}%<extra>All reviews</extra>")
+        fig.add_bar(y=d["aspect_group"], x=d["pct_of_reviews"], orientation="h", name="Your reviews",
+                    marker_color=TEAL, hovertemplate="%{y}: %{x:.1f}%<extra>Your reviews</extra>")
+        fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.06)
+    else:
+        fig.add_bar(y=d["aspect_group"], x=d["pct_of_reviews"], orientation="h",
+                    marker_color=[TIER_COLOURS[tier(p)] for p in d["pct_of_reviews"]],
+                    text=[f"{p:.1f}%" for p in d["pct_of_reviews"]], textposition="outside",
+                    cliponaxis=False, showlegend=False,
+                    hovertemplate="%{y}: %{x:.1f}% of reviews<extra></extra>")
+        fig.update_layout(bargap=0.35)
+    fig.update_layout(xaxis=dict(ticksuffix="%", gridcolor="#E6F0F3", zeroline=False,
+                                 range=[0, max(df["pct_of_reviews"].max() * 1.18, 10)]),
+                      yaxis=dict(automargin=True))
+    return plotly_base(fig, 380)
 
 
 def ranking_table(df, key):
     st.dataframe(
-        df.rename(columns={"aspect_group": "Service area",
-                           "reviews_with_negative_mentions": "Reviews with a complaint",
+        df.rename(columns={"aspect_group": "Area", "reviews_with_negative_mentions": "Reviews with a complaint",
                            "pct_of_reviews": "% of reviews", "priority_rank": "Rank"}),
         hide_index=True, width="stretch", key=key,
-        column_order=["Rank", "Service area", "Reviews with a complaint", "% of reviews"],
+        column_order=["Rank", "Area", "Reviews with a complaint", "% of reviews"],
         column_config={"% of reviews": st.column_config.ProgressColumn(
-            "% of reviews", format="%.1f%%", min_value=0, max_value=100)},
+            "% of reviews", format="%.1f%%", min_value=0, max_value=100, color=TEAL)},
     )
 
 
+def top_issues(df, n=3):
+    items = []
+    for _, r in df.head(n).iterrows():
+        items.append(f"""<div class="rr-issue"><div class="rr-num">{int(r['priority_rank'])}</div>
+            <div><b>{esc(r['aspect_group'])}</b><span class="pct">{r['pct_of_reviews']:.1f}%</span>
+            <p>{esc(ASPECT_ACTIONS.get(r['aspect_group'], ''))}</p></div></div>""")
+    st.html("".join(items))
+
+
 # =====================================================================
-# PAGE: PRIORITIES
+# PAGE: DASHBOARD
 # =====================================================================
-def page_priorities():
+def page_dashboard():
     df, source = load_ranking()
     top = df.iloc[0]
-    total_neg = df["reviews_with_negative_mentions"].sum()
-    top3_share = 100 * df["reviews_with_negative_mentions"].head(3).sum() / total_neg
+    best = MODEL_RESULTS.iloc[0]
 
-    st.html(f"""
-      <div class="rr-lead">{esc(top['aspect_group'])} is the first thing to fix.</div>
-      <p class="rr-sub">{top['pct_of_reviews']:.1f}% of {BENCHMARK_REVIEWS:,} guest reviews contain at least
-      one negative remark about {esc(top['aspect_group'].lower())}. Service areas are ranked below by the share
-      of reviews that complain about them.</p>
-      <div class="rr-facts">
-        <div class="rr-fact"><b>{BENCHMARK_REVIEWS:,}</b><span>reviews analysed</span></div>
-        <div class="rr-fact"><b>{len(df)}</b><span>service areas tracked</span></div>
-        <div class="rr-fact"><b>{top3_share:.1f}%</b><span>of all complaints fall in the top three areas</span></div>
-        <div class="rr-fact"><b>{total_neg:,}</b><span>negative mentions in total</span></div>
+    st.html(f"""<div class="rr-hero">
+        <div><h1>Hotel Review Dashboard</h1>
+        <p>See what guests complain about most, based on {BENCHMARK_REVIEWS:,} hotel reviews,
+        and check any review yourself.</p></div>
+        <a href="check" target="_self">Check a review</a>
+      </div>
+      <div class="rr-cards">
+        <div class="rr-card"><div class="v">{BENCHMARK_REVIEWS:,}</div><div class="l">Reviews analysed</div></div>
+        <div class="rr-card accent"><div class="v">{esc(top['aspect_group'])}</div><div class="l">Most complained about</div></div>
+        <div class="rr-card"><div class="v">{top['pct_of_reviews']:.1f}%</div><div class="l">of reviews complain about it</div></div>
+        <div class="rr-card"><div class="v">{best['Accuracy'] * 100:.1f}%</div><div class="l">Model accuracy (RoBERTa)</div></div>
       </div>""")
 
-    left, right = st.columns([1.1, 1], gap="large")
+    left, right = st.columns([1.35, 1], gap="large")
     with left:
-        st.html('<div class="rr-h">Priority ranking</div>'
-                '<p class="rr-note">Share of all reviews with at least one negative mention of the area.</p>')
-        ranking_rows(df)
-        st.html(f"""<p class="rr-note" style="margin-top:.8rem">
-            <b style="color:{TIER_COLOURS['Critical']}">Critical</b> 40% or more of reviews &nbsp;
-            <b style="color:{TIER_COLOURS['High']}">High</b> 20 to 40% &nbsp;
-            <b style="color:{TIER_COLOURS['Watch']}">Watch</b> under 20%</p>""")
+        st.html('<div class="rr-h">Complaints by area</div>')
+        show_chart(area_bar_chart(df))
+        st.caption("Percentage of reviews with at least one negative comment about each area.")
     with right:
-        st.html('<div class="rr-h">Where complaints concentrate</div>'
-                f'<p class="rr-note">Each bar is the area\'s share of all {total_neg:,} negative mentions. '
-                'The line shows how quickly the top areas add up.</p>')
-        show_chart(pareto_chart(df))
+        st.html('<div class="rr-h">Top 3 to fix</div>')
+        top_issues(df)
 
-    st.html('<div class="rr-h" style="margin-top:1.2rem">Suggested first steps</div>'
-            '<p class="rr-note">Starting points for the three highest-ranked areas. '
-            'These are general suggestions, not model output.</p>')
-    cols = st.columns(3, gap="large")
-    for col, (_, r) in zip(cols, df.head(3).iterrows()):
-        with col:
-            st.html(f"""<div class="rr-step"><b>{int(r['priority_rank'])}. {esc(r['aspect_group'])}</b>
-                        <p>{esc(ASPECT_ACTIONS.get(r['aspect_group'], ''))}</p></div>""")
-
-    st.write("")
-    with st.expander("Full ranking table and download"):
+    with st.expander("See the full table"):
         ranking_table(df, key="bench_table")
-        st.download_button("Download ranking as CSV", df.to_csv(index=False).encode("utf-8"),
-                           file_name="roomread_priority_ranking.csv", mime="text/csv",
-                           icon=":material/download:")
+        st.download_button("Download CSV", df.to_csv(index=False).encode("utf-8"),
+                           file_name="roomread_ranking.csv", mime="text/csv", icon=":material/download:")
         if source == "built-in":
-            st.caption("Showing the built-in figures. Add aspect_priority_ranking.csv to the repo to update them.")
+            st.caption("Showing built-in figures because aspect_priority_ranking.csv was not found.")
 
 
 # =====================================================================
@@ -586,62 +556,53 @@ def _clear_review():
     st.session_state.pop("single_result", None)
 
 
-def model_unavailable(error):
-    st.error(
-        f"The sentiment model couldn't be loaded from `{MODEL_ID}`. "
-        "Check that the model folder is in the repo (or that MODEL_ID in the app secrets points to it), "
-        "then select Retry.\n\n"
-        f"Details: {error}",
-        icon=":material/error:",
-    )
-    if st.button("Retry loading the model", icon=":material/refresh:"):
-        load_sentiment_model.clear()
-        st.rerun()
-
-
 def ensure_sentiment_model():
-    with st.spinner("Loading the model. The first visit after the app wakes up takes about a minute."):
+    with st.spinner("Loading the model. This can take a minute the first time."):
         bundle = load_sentiment_model(MODEL_ID)
     if bundle.get("error"):
-        model_unavailable(bundle["error"])
+        st.error(f"The model could not be loaded from `{MODEL_ID}`. If you moved the model, set MODEL_ID in "
+                 f"the app's Secrets, then press Retry.\n\nDetails: {bundle['error']}", icon=":material/error:")
+        if st.button("Retry", icon=":material/refresh:"):
+            load_sentiment_model.clear()
+            st.rerun()
         return False
     return True
 
 
 def render_single(res):
     if res["status"] == "rejected":
-        why = ("It's too short to analyse. Paste at least one full sentence about the stay."
-               if res["method"] == "length" else
-               f"This doesn't read like a hotel review (review score {res['score']:.2f}; "
-               f"{RELEVANCE_THRESHOLD:.2f} or more is needed). Paste a guest's description of their stay.")
-        st.warning(why, icon=":material/do_not_disturb_on:")
+        if res["method"] == "length":
+            st.warning("That's too short. Please paste at least one full sentence about the stay.")
+        else:
+            st.warning("This doesn't look like a hotel review, so it wasn't analysed. "
+                       "Try pasting a guest's comments about their stay.")
         return
     if res["status"] == "no_aspect":
-        st.info("No tracked service area is mentioned. RoomRead looks for remarks about rooms, staff, "
-                "food, location, price, facilities and the stay overall.", icon=":material/search_off:")
+        st.info("We couldn't find any comments about rooms, staff, food, location, price, facilities "
+                "or the stay overall.")
         return
 
     df = res["df"]
     counts = df["sentiment"].value_counts()
+    parts = [f"{counts[s]} {s}" for s in ("positive", "negative", "neutral") if s in counts]
     n_flag = int((df["check"] != "").sum())
-    n_areas = df["aspect"].nunique()
-    parts = [f"{counts.get(s, 0)} {s}" for s in ("negative", "neutral", "positive") if counts.get(s, 0)]
-    flag_txt = f", {n_flag} to check by hand" if n_flag else ""
-    st.html(f'<div class="rr-verdict"><b>{len(df)} mention{"s" if len(df) != 1 else ""}</b> across '
-            f'{n_areas} service area{"s" if n_areas != 1 else ""}: {", ".join(parts)}{flag_txt}.</div>')
+    extra = f" {n_flag} of them may need a second look." if n_flag else ""
+    st.html(f'<div class="rr-summary">We found <b>{len(df)} comment{"s" if len(df) != 1 else ""}</b>: '
+            f'{", ".join(parts)}.{extra}</div>')
 
-    chips = []
+    tiles = []
     for asp in ASPECTS:
         sub = df[df["aspect"] == asp]
         if sub.empty:
             continue
         kinds = set(sub["sentiment"])
         label = kinds.pop() if len(kinds) == 1 else "mixed"
-        chips.append(f"""<div class="rr-chip"><div class="a">{esc(asp)}</div>
-            <div class="s" style="color:{SENT_COLOURS[label]}">{label}</div></div>""")
-    st.html('<div class="rr-chips">' + "".join(chips) + "</div>")
+        c = SENT_COLOURS[label]
+        tiles.append(f'<div class="rr-tile" style="border-top-color:{c}"><div class="a">{esc(asp)}</div>'
+                     f'<div class="s" style="color:{c}">{label}</div></div>')
+    st.html('<div class="rr-tiles">' + "".join(tiles) + "</div>")
 
-    st.html('<div class="rr-h">The review, line by line</div>')
+    st.html('<div class="rr-h">Your review</div>')
     spans = []
     for i, sent in enumerate(res["sentences"], start=1):
         sub = df[df["sentence_no"] == i]
@@ -650,49 +611,38 @@ def render_single(res):
             continue
         kinds = set(sub["sentiment"])
         cls = f"rr-s-{next(iter(kinds))}" if len(kinds) == 1 else "rr-s-mixed"
-        tags = "".join(
-            f'<span class="rr-tag" style="color:{SENT_COLOURS[r.sentiment]}">{esc(r.aspect)}</span>'
-            for r in sub.itertuples())
+        tags = "".join(f'<span class="rr-tag" style="background:{SENT_COLOURS[r.sentiment]}">{esc(r.aspect)}</span>'
+                       for r in sub.itertuples())
         spans.append(f'<span class="{cls}">{esc(sent)}</span>{tags} ')
-    legend = "".join(f'<span><i style="background:{SENT_COLOURS[k]};opacity:.55"></i>{k.capitalize()}</span>'
-                     for k in ("negative", "neutral", "positive", "mixed"))
-    st.html(f'<div class="rr-read">{"".join(spans)}</div>'
-            f'<div class="rr-legend">{legend}<span>Grey text: no tracked area mentioned</span></div>')
+    legend = "".join(f'<span><i style="background:{SENT_COLOURS[k]}"></i>{k.capitalize()}</span>'
+                     for k in ("positive", "negative", "neutral", "mixed"))
+    st.html(f'<div class="rr-read">{"".join(spans)}</div><div class="rr-legend">{legend}</div>')
 
-    st.html('<div class="rr-h">Details</div>')
-    table = df.rename(columns={"sentence_no": "#", "sentence": "Sentence", "aspect": "Service area",
-                               "sentiment": "Sentiment", "confidence": "Confidence",
-                               "check": "Check", "matched_words": "Matched words"})
-    st.dataframe(
-        table, hide_index=True, width="stretch",
-        column_order=["#", "Sentence", "Service area", "Sentiment", "Confidence", "Check", "Matched words"],
-        column_config={
-            "#": st.column_config.NumberColumn(width="small"),
-            "Sentence": st.column_config.TextColumn(width="large"),
-            "Confidence": st.column_config.ProgressColumn(format="%.2f", min_value=0, max_value=1),
-        },
-    )
-    st.caption(f"Neutral predictions and any prediction under {LOW_CONFIDENCE:.0%} confidence are marked for a "
-               "manual check, because neutral was the least reliable class in testing. "
-               + ("Relevance was checked with the zero-shot model."
-                  if res["method"] == "model" else
-                  "The relevance model wasn't available, so relevance was judged by keyword matches."))
-    st.download_button("Download this analysis as CSV", df.to_csv(index=False).encode("utf-8"),
-                       file_name="roomread_review_analysis.csv", mime="text/csv",
-                       icon=":material/download:")
+    with st.expander("Show details"):
+        table = df.rename(columns={"sentence_no": "#", "sentence": "Sentence", "aspect": "Area",
+                                   "sentiment": "Sentiment", "confidence": "Confidence",
+                                   "check": "Note", "matched_words": "Matched words"})
+        st.dataframe(
+            table, hide_index=True, width="stretch",
+            column_order=["#", "Sentence", "Area", "Sentiment", "Confidence", "Note", "Matched words"],
+            column_config={"Sentence": st.column_config.TextColumn(width="large"),
+                           "Confidence": st.column_config.ProgressColumn(format="%.2f", min_value=0,
+                                                                         max_value=1, color=TEAL)},
+        )
+        st.caption(f"Neutral results and results below {LOW_CONFIDENCE:.0%} confidence are marked, "
+                   "because the model is less reliable on them.")
+        st.download_button("Download CSV", df.to_csv(index=False).encode("utf-8"),
+                           file_name="roomread_review.csv", mime="text/csv", icon=":material/download:")
 
 
 def page_check():
-    st.html('<div class="rr-lead">Check a review</div>'
-            '<p class="rr-sub">Paste a guest review. RoomRead splits it into sentences, finds the service areas '
-            'each one mentions, and predicts whether the guest is positive, negative or neutral about each.</p>')
-
+    page_title("Check a review", "Paste a guest review to see what they liked and what they didn't.")
     st.session_state.setdefault("review_text", "")
-    st.pills("Try an example", list(SAMPLES), key="sample_choice", on_change=_load_sample)
-    st.text_area("Guest review", key="review_text", height=190,
-                 placeholder="The room was spotless but breakfast was cold…")
-    c1, c2, _ = st.columns([1.2, 0.8, 4])
-    run = c1.button("Analyse review", type="primary", icon=":material/manage_search:", width="stretch")
+    st.pills("Or try an example", list(SAMPLES), key="sample_choice", on_change=_load_sample)
+    st.text_area("Review", key="review_text", height=170, label_visibility="collapsed",
+                 placeholder="Example: The room was clean but breakfast was cold.")
+    c1, c2, _ = st.columns([1.1, 0.7, 4])
+    run = c1.button("Analyse", type="primary", icon=":material/search:", width="stretch")
     c2.button("Clear", on_click=_clear_review, width="stretch")
 
     if not ensure_sentiment_model():
@@ -701,22 +651,21 @@ def page_check():
     text = st.session_state["review_text"].strip()
     if run:
         if not text:
-            st.info("Paste a review first, or pick one of the examples above.", icon=":material/edit_note:")
+            st.info("Please paste a review first, or pick an example.")
             return
-        with st.spinner("Reading the review…"):
+        with st.spinner("Analysing…"):
             try:
                 st.session_state["single_result"] = analyse_review(text, MODEL_ID)
             except Exception as exc:  # noqa: BLE001
-                st.error(f"The analysis stopped with an error: {type(exc).__name__}: {exc}")
+                st.error(f"Something went wrong: {type(exc).__name__}: {exc}")
                 return
 
     if "single_result" in st.session_state:
-        st.divider()
         render_single(st.session_state["single_result"])
 
 
 # =====================================================================
-# PAGE: ANALYSE A FILE
+# PAGE: UPLOAD REVIEWS
 # =====================================================================
 def read_upload(uploaded):
     name = uploaded.name.lower()
@@ -731,7 +680,7 @@ def read_upload(uploaded):
             return pd.read_csv(io.BytesIO(raw), encoding=enc)
         except UnicodeDecodeError:
             continue
-    raise ValueError("Couldn't read the file's text encoding. Save it as UTF-8 CSV and try again.")
+    raise ValueError("Please save the file as a UTF-8 CSV and try again.")
 
 
 def guess_text_column(df):
@@ -746,7 +695,7 @@ def guess_text_column(df):
 
 
 def run_file_analysis(reviews, use_gate):
-    status = st.progress(0.0, text="Preparing…")
+    status = st.progress(0.0, text="Starting…")
     kept, rejected = [], 0
     if use_gate:
         for i, rv in enumerate(reviews):
@@ -755,7 +704,7 @@ def run_file_analysis(reviews, use_gate):
                 kept.append(rv)
             else:
                 rejected += 1
-            status.progress(0.3 * (i + 1) / len(reviews), text=f"Checking relevance: {i + 1} of {len(reviews)}")
+            status.progress(0.3 * (i + 1) / len(reviews), text=f"Checking reviews: {i + 1} of {len(reviews)}")
     else:
         kept = [rv for rv in reviews if len(rv.split()) >= 4]
         rejected = len(reviews) - len(kept)
@@ -774,7 +723,7 @@ def run_file_analysis(reviews, use_gate):
     base = 0.3 if use_gate else 0.0
 
     def progress(done, total):
-        status.progress(base + (1 - base) * done / total, text=f"Scoring mentions: {done:,} of {total:,}")
+        status.progress(base + (1 - base) * done / total, text=f"Analysing comments: {done:,} of {total:,}")
 
     preds = score_pairs(pairs, batch_size=32, on_progress=progress)
     status.empty()
@@ -786,65 +735,39 @@ def run_file_analysis(reviews, use_gate):
             "ranking": build_ranking(pred, len(kept))}
 
 
-def comparison_chart(yours, bench):
-    merged = yours.merge(bench[["aspect_group", "pct_of_reviews"]], on="aspect_group",
-                         suffixes=("_yours", "_bench"), how="left")
-    merged = merged.iloc[::-1]
-    fig = go.Figure()
-    fig.add_bar(y=merged["aspect_group"], x=merged["pct_of_reviews_bench"], orientation="h",
-                name=f"Benchmark ({BENCHMARK_REVIEWS:,} reviews)", marker_color="#C9CCC6",
-                hovertemplate="%{y}: %{x:.1f}% (benchmark)<extra></extra>")
-    fig.add_bar(y=merged["aspect_group"], x=merged["pct_of_reviews_yours"], orientation="h",
-                name="Your reviews", marker_color=NIGHT,
-                hovertemplate="%{y}: %{x:.1f}% (yours)<extra></extra>")
-    fig.update_layout(barmode="group", bargap=0.3, bargroupgap=0.08,
-                      xaxis=dict(title="% of reviews with a complaint", ticksuffix="%", gridcolor="#ECECE8"))
-    return plotly_base(fig, 420)
-
-
 def page_file():
-    st.html('<div class="rr-lead">Analyse a file</div>'
-            '<p class="rr-sub">Upload your own reviews as CSV, Excel or a text file with one review per line. '
-            'RoomRead builds the same priority ranking for them and sets it against the '
-            f'{BENCHMARK_REVIEWS:,}-review benchmark.</p>')
-
-    up = st.file_uploader("Reviews file", type=["csv", "xlsx", "txt"])
+    page_title("Upload reviews", "Upload your hotel's reviews and see which areas guests complain about most. "
+                                 "CSV, Excel or a text file with one review per line.")
+    up = st.file_uploader("Reviews file", type=["csv", "xlsx", "txt"], label_visibility="collapsed")
     if up is None:
-        st.caption("Tip: start with 100 reviews. The free server scores a few mentions per second, "
-                   "so a few hundred reviews take a few minutes.")
+        st.caption("Tip: start with around 100 reviews. Larger files take a few minutes.")
         st.session_state.pop("file_result", None)
         return
 
     try:
         data = read_upload(up)
     except Exception as exc:  # noqa: BLE001
-        st.error(f"The file couldn't be read: {exc}")
+        st.error(f"We couldn't read this file. {exc}")
         return
     if data.empty:
-        st.warning("The file has no rows.")
+        st.warning("The file is empty.")
         return
-
     guess = guess_text_column(data)
     if guess is None:
-        st.error("No text column found. The file needs a column containing the review text.")
+        st.error("We couldn't find a column with review text.")
         return
 
-    c1, c2, c3 = st.columns([1.3, 1, 1.2], gap="medium")
-    col = c1.selectbox("Column with the review text", list(data.columns),
-                       index=list(data.columns).index(guess))
+    c1, c2, c3 = st.columns([1.3, 1, 1.3], gap="medium")
+    col = c1.selectbox("Review column", list(data.columns), index=list(data.columns).index(guess))
     available = int(data[col].dropna().astype(str).str.strip().ne("").sum())
-    limit = c2.number_input("Reviews to analyse", min_value=1, max_value=min(available, MAX_FILE_REVIEWS),
+    limit = c2.number_input("How many reviews", min_value=1, max_value=min(available, MAX_FILE_REVIEWS),
                             value=min(available, 100), step=10)
-    use_gate = c3.toggle("Skip text that isn't a review", value=False,
-                         help="Runs the zero-shot relevance check on every row. Slower; use it when the "
-                              "file may contain non-review text.")
-    st.caption(f"{available:,} non-empty rows found in “{col}”. At most {MAX_FILE_REVIEWS} are analysed per run.")
-
-    with st.expander("Preview the first rows"):
-        st.dataframe(data.head(8), hide_index=True, width="stretch")
+    c3.write("")
+    use_gate = c3.toggle("Skip rows that aren't reviews", value=False,
+                         help="Slower. Use it if the file has other text mixed in.")
 
     run_key = (up.name, up.size, col, int(limit), use_gate)
-    if st.button("Analyse file", type="primary", icon=":material/play_arrow:"):
+    if st.button("Analyse reviews", type="primary", icon=":material/play_arrow:"):
         if not ensure_sentiment_model():
             return
         reviews = data[col].dropna().astype(str).str.strip()
@@ -852,171 +775,129 @@ def page_file():
         try:
             st.session_state["file_result"] = {"key": run_key, **run_file_analysis(reviews, use_gate)}
         except Exception as exc:  # noqa: BLE001
-            st.error(f"The analysis stopped with an error: {type(exc).__name__}: {exc}")
+            st.error(f"Something went wrong: {type(exc).__name__}: {exc}")
             return
 
     res = st.session_state.get("file_result")
     if not res or res["key"] != run_key:
         return
-
-    st.divider()
     if res["ranking"] is None:
-        st.info("None of the analysed reviews mention a tracked service area.")
+        st.info("None of these reviews mention the areas we track.")
         return
 
     rk, pred, n = res["ranking"], res["pred"], res["n_reviews"]
     bench, _ = load_ranking()
     bench_map = dict(zip(bench["aspect_group"], bench["pct_of_reviews"]))
     top = rk.iloc[0]
-    skipped = f" {res['rejected']} rows were skipped as too short or not a review." if res["rejected"] else ""
-    st.html(f"""<div class="rr-lead" style="font-size:1.7rem">In your reviews, {esc(top['aspect_group'])}
-                comes first.</div>
-                <p class="rr-sub">{top['pct_of_reviews']:.1f}% of {n:,} reviews complain about it, against
-                {bench_map.get(top['aspect_group'], float('nan')):.1f}% in the benchmark.
-                RoomRead scored {len(pred):,} mentions.{esc(skipped)}</p>""")
+    skipped = f"{res['rejected']} rows skipped" if res["rejected"] else "No rows skipped"
 
-    left, right = st.columns([1, 1.1], gap="large")
-    with left:
-        st.html('<div class="rr-h">Your priority ranking</div>'
-                '<p class="rr-note">Share of your reviews with at least one negative mention, and the '
-                'difference from the benchmark in percentage points.</p>')
-        ranking_rows(rk, benchmark=bench_map)
-    with right:
-        st.html('<div class="rr-h">Your reviews against the benchmark</div>'
-                '<p class="rr-note">A dark bar longer than the grey one means guests complain about '
-                'that area more often than usual.</p>')
-        show_chart(comparison_chart(rk, bench))
-
-    n_flag = int((pred["check"] != "").sum())
-    with st.expander(f"All {len(pred):,} scored mentions ({n_flag:,} marked to check)"):
-        st.dataframe(pred, hide_index=True, width="stretch",
-                     column_config={"confidence": st.column_config.ProgressColumn(
-                         "confidence", format="%.2f", min_value=0, max_value=1)})
-    d1, d2, _ = st.columns([1, 1, 2])
-    d1.download_button("Download ranking (CSV)", rk.to_csv(index=False).encode("utf-8"),
-                       file_name="roomread_my_ranking.csv", mime="text/csv", icon=":material/download:",
-                       width="stretch")
-    d2.download_button("Download all mentions (CSV)", pred.to_csv(index=False).encode("utf-8"),
-                       file_name="roomread_my_mentions.csv", mime="text/csv", icon=":material/download:",
-                       width="stretch")
-
-
-# =====================================================================
-# PAGE: MODEL EVIDENCE
-# =====================================================================
-def dumbbell_chart():
-    df = MODEL_RESULTS.iloc[::-1]
-    fig = go.Figure()
-    for _, r in df.iterrows():
-        fig.add_shape(type="line", x0=r["Macro-F1"], x1=r["Accuracy"], y0=r["Model"], y1=r["Model"],
-                      line=dict(color="#C9CCC6", width=4), layer="below")
-    fig.add_scatter(x=df["Macro-F1"], y=df["Model"], mode="markers+text", name="Macro-F1",
-                    marker=dict(size=16, color=BRASS), text=[f"{v:.3f}" for v in df["Macro-F1"]],
-                    textposition="bottom center", hovertemplate="%{y}: macro-F1 %{x:.3f}<extra></extra>")
-    fig.add_scatter(x=df["Accuracy"], y=df["Model"], mode="markers+text", name="Accuracy",
-                    marker=dict(size=16, color=NIGHT), text=[f"{v:.3f}" for v in df["Accuracy"]],
-                    textposition="bottom center", hovertemplate="%{y}: accuracy %{x:.3f}<extra></extra>")
-    fig.update_layout(xaxis=dict(range=[0.6, 0.96], gridcolor="#ECECE8", title="Score on the held-out test set"),
-                      yaxis=dict(automargin=True))
-    return plotly_base(fig, 330)
-
-
-def page_model():
-    best = MODEL_RESULTS.iloc[0]
-    st.html(f"""<div class="rr-lead">Fine-tuned RoBERTa reads sentiment best.</div>
-        <p class="rr-sub">Three models were tested on the human-labelled OATS-Hotels test set of 1,692 examples.
-        RoBERTa reached a macro-F1 of {best['Macro-F1']:.3f} and accuracy of {best['Accuracy']:.3f}.
-        It is the model behind this app.</p>""")
+    st.html(f"""<div class="rr-cards">
+        <div class="rr-card"><div class="v">{n:,}</div><div class="l">Reviews analysed</div></div>
+        <div class="rr-card accent"><div class="v">{esc(top['aspect_group'])}</div><div class="l">Most complained about</div></div>
+        <div class="rr-card"><div class="v">{top['pct_of_reviews']:.1f}%</div><div class="l">of your reviews complain about it</div></div>
+        <div class="rr-card"><div class="v">{len(pred):,}</div><div class="l">Comments found ({esc(skipped.lower())})</div></div>
+      </div>""")
 
     left, right = st.columns([1.35, 1], gap="large")
     with left:
-        st.html('<div class="rr-h">Accuracy and macro-F1 by model</div>')
-        show_chart(dumbbell_chart())
+        st.html('<div class="rr-h">Your reviews compared with all reviews</div>')
+        show_chart(area_bar_chart(rk, benchmark=bench_map))
     with right:
-        st.html(f"""<div class="rr-h">Why two numbers</div>
-          <p class="rr-note" style="font-size:.95rem">Most test examples are positive, so a model can score
-          high accuracy while missing many negative and neutral cases. Macro-F1 weighs the three classes
-          equally, which makes it the fairer yardstick here. The gap between the two dots is the cost of
-          that imbalance.</p>
-          <p class="rr-note" style="font-size:.95rem">The neutral class is the weakest point: it had only
-          38 test examples. That is why the app marks neutral predictions for a manual check.</p>""")
+        st.html('<div class="rr-h">Top 3 to fix</div>')
+        top_issues(rk)
+
+    with st.expander(f"See all {len(pred):,} comments"):
+        st.dataframe(pred, hide_index=True, width="stretch",
+                     column_config={"confidence": st.column_config.ProgressColumn(
+                         "confidence", format="%.2f", min_value=0, max_value=1, color=TEAL)})
+    d1, d2, _ = st.columns([1, 1, 2])
+    d1.download_button("Download ranking", rk.to_csv(index=False).encode("utf-8"),
+                       file_name="my_ranking.csv", mime="text/csv", icon=":material/download:", width="stretch")
+    d2.download_button("Download comments", pred.to_csv(index=False).encode("utf-8"),
+                       file_name="my_comments.csv", mime="text/csv", icon=":material/download:", width="stretch")
+
+
+# =====================================================================
+# PAGE: MODEL RESULTS
+# =====================================================================
+def page_model():
+    page_title("Model results", "Three models were tested on 1,692 hand-labelled examples from the OATS-Hotels "
+                                "dataset. Fine-tuned RoBERTa did best and is the one used in this app.")
+    fig = go.Figure()
+    fig.add_bar(x=MODEL_RESULTS["Model"], y=MODEL_RESULTS["Accuracy"], name="Accuracy", marker_color=MIDNIGHT,
+                text=[f"{v:.3f}" for v in MODEL_RESULTS["Accuracy"]], textposition="outside")
+    fig.add_bar(x=MODEL_RESULTS["Model"], y=MODEL_RESULTS["Macro-F1"], name="Macro-F1", marker_color=TEAL,
+                text=[f"{v:.3f}" for v in MODEL_RESULTS["Macro-F1"]], textposition="outside")
+    fig.update_layout(barmode="group", bargap=0.3, yaxis=dict(range=[0, 1.08], gridcolor="#E6F0F3"))
+
+    left, right = st.columns([1.4, 1], gap="large")
+    with left:
+        show_chart(plotly_base(fig, 360))
+    with right:
+        st.html(f"""<div class="rr-h">Good to know</div>
+          <div class="rr-issue"><div><b>Accuracy</b><p>How many predictions were right overall. It looks high
+            for every model because most examples are positive.</p></div></div>
+          <div class="rr-issue"><div><b>Macro-F1</b><p>Treats positive, negative and neutral equally, so it is
+            the fairer score here.</p></div></div>
+          <div class="rr-issue"><div><b>Neutral is the hardest</b><p>There were only 38 neutral test examples,
+            so the app marks neutral results for a second look.</p></div></div>""")
 
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        st.html('<div class="rr-h">Are the differences real?</div>'
-                '<p class="rr-note">McNemar\'s test on paired predictions over the same test set.</p>')
+        st.html('<div class="rr-h">Scores</div>')
+        st.dataframe(MODEL_RESULTS, hide_index=True, width="stretch",
+                     column_config={"Accuracy": st.column_config.NumberColumn(format="%.3f"),
+                                    "Macro-F1": st.column_config.NumberColumn(format="%.3f")})
+    with c2:
+        st.html('<div class="rr-h">Is the difference real? (McNemar test)</div>')
         st.dataframe(MCNEMAR, hide_index=True, width="stretch",
                      column_config={"p-value": st.column_config.NumberColumn(format="%.3f")})
-        st.caption("RoBERTa beats BERT with statistical significance. Its lead over zero-shot BART is not "
-                   "significant, so a zero-shot model is a reasonable choice when there is no labelled data.")
-    with c2:
-        st.html('<div class="rr-h">Training setup</div>'
-                '<p class="rr-note">Class weights offset the imbalance during fine-tuning.</p>')
-        st.dataframe(pd.DataFrame({
-            "Item": ["Training examples", "Validation examples", "Test examples",
-                     "Class weight: positive", "Class weight: negative", "Class weight: neutral"],
-            "Value": ["8,009", "1,767", "1,692", "0.402", "2.236", "14.998"],
-        }), hide_index=True, width="stretch")
-
-    st.html('<div class="rr-h" style="margin-top:1rem">Full results</div>')
-    st.dataframe(MODEL_RESULTS, hide_index=True, width="stretch",
-                 column_config={"Accuracy": st.column_config.NumberColumn(format="%.3f"),
-                                "Macro-F1": st.column_config.NumberColumn(format="%.3f")})
+    st.caption("RoBERTa is significantly better than BERT. Its lead over zero-shot BART is not significant.")
 
 
 # =====================================================================
 # PAGE: ABOUT
 # =====================================================================
 def page_about():
-    st.html(f"""<div class="rr-lead">How RoomRead works</div>
-      <p class="rr-sub">A review goes through five steps. The same pipeline produced the benchmark ranking from
-      {BENCHMARK_REVIEWS:,} unlabelled reviews.</p>
-      <ol class="rr-steps">
-        <li><div><b>Split into sentences</b><p>Each sentence is analysed on its own, so one review can praise the
-            room and criticise the breakfast.</p></div></li>
-        <li><div><b>Check it is a review</b><p>A zero-shot classifier (DistilBART-MNLI) rejects text that isn't
-            about a hotel stay. The review label needs a score of {RELEVANCE_THRESHOLD:.2f} or more.</p></div></li>
-        <li><div><b>Find the service areas</b><p>Keyword matching assigns each sentence to one or more of seven
-            areas: {esc(', '.join(ASPECTS))}.</p></div></li>
-        <li><div><b>Predict sentiment for each area</b><p>A fine-tuned RoBERTa-base model reads the sentence
-            together with the area name and predicts positive, negative or neutral.</p></div></li>
-        <li><div><b>Rank the areas</b><p>For a set of reviews, each area's score is the share of reviews with at
-            least one negative mention of it.</p></div></li>
-      </ol>""")
-
-    c1, c2 = st.columns(2, gap="large")
-    with c1:
-        st.html(f"""<div class="rr-h" style="margin-top:1.4rem">Data</div>
-          <p class="rr-note" style="font-size:.95rem">The sentiment model was trained and evaluated on the
-          human-annotated OATS-Hotels dataset (Chebolu et al., 2024). The benchmark ranking comes from
-          applying it to {BENCHMARK_REVIEWS:,} unlabelled hotel reviews.</p>""")
-    with c2:
-        st.html("""<div class="rr-h" style="margin-top:1.4rem">Limitations</div>
-          <p class="rr-note" style="font-size:.95rem">Keyword matching misses areas described in other words
-          and can tag the wrong area. Neutral predictions are the least reliable. The model reads English only.
-          The benchmark mixes many hotels, so it describes typical guests rather than any single property.</p>""")
-
-    with st.expander("Technical details"):
-        st.markdown(
-            f"- Sentiment model: `{MODEL_ID}`\n"
-            f"- Relevance model: `{RELEVANCE_MODEL}` (threshold {RELEVANCE_THRESHOLD})\n"
-            f"- Input format: `sentence [SEP] aspect`, max {MAX_LEN} tokens\n"
-            f"- Manual-check flag: neutral, or confidence below {LOW_CONFIDENCE:.2f}\n"
-            "- Hosting: Streamlit Community Cloud; the app sleeps when idle and wakes on the next visit."
-        )
+    page_title("About this project", 
+                                     "RoomRead looks at each sentence of a review and works out what the guest is "
+                                     "talking about and how they feel about it.")
+    steps = [
+        ("Split the review into sentences", "So one review can praise the room and criticise the breakfast."),
+        ("Check that it's a hotel review", f"A zero-shot model filters out unrelated text "
+                                           f"(it needs a score of {RELEVANCE_THRESHOLD:.2f} or more)."),
+        ("Find what each sentence is about", "Keywords match each sentence to one or more of seven areas: "
+                                             + ", ".join(ASPECTS) + "."),
+        ("Predict the sentiment", "A fine-tuned RoBERTa model labels each area as positive, negative or neutral."),
+        ("Rank the areas", "For many reviews, each area is scored by the share of reviews that complain about it."),
+    ]
+    left, right = st.columns([1.3, 1], gap="large")
+    with left:
+        st.html('<div class="rr-h">How it works</div>' + "".join(
+            f'<div class="rr-step"><div class="rr-num">{i}</div><div><b>{esc(t)}</b><p>{esc(d)}</p></div></div>'
+            for i, (t, d) in enumerate(steps, start=1)))
+    with right:
+        st.html(f"""<div class="rr-h">Data</div>
+          <div class="rr-issue"><div><p style="margin:0">The model was trained and tested on the OATS-Hotels dataset
+            (Chebolu et al., 2024). The dashboard comes from {BENCHMARK_REVIEWS:,} other hotel reviews.</p></div></div>
+          <div class="rr-h" style="margin-top:1rem">Limitations</div>
+          <div class="rr-issue"><div><p style="margin:0">Keyword matching can miss or mislabel areas. Neutral results
+            are the least reliable. It works in English only.</p></div></div>
+          <div class="rr-h" style="margin-top:1rem">Author</div>
+          <div class="rr-issue"><div><b>Nethika Alagarathnam</b></div>""")
 
 
 # =====================================================================
 # NAVIGATION
 # =====================================================================
+setup_page()
 pages = [
-    st.Page(page_priorities, title="Priorities", icon=":material/leaderboard:", default=True),
+    st.Page(page_dashboard, title="Dashboard", icon=":material/dashboard:", default=True),
     st.Page(page_check, title="Check a review", icon=":material/rate_review:", url_path="check"),
-    st.Page(page_file, title="Analyse a file", icon=":material/upload_file:", url_path="file"),
-    st.Page(page_model, title="Model evidence", icon=":material/analytics:", url_path="model"),
+    st.Page(page_file, title="Upload reviews", icon=":material/upload_file:", url_path="upload"),
+    st.Page(page_model, title="Model results", icon=":material/bar_chart:", url_path="model"),
     st.Page(page_about, title="About", icon=":material/info:", url_path="about"),
 ]
 nav = st.navigation(pages, position="top")
-masthead()
 nav.run()
 footer()
