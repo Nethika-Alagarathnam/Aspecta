@@ -3,14 +3,15 @@ RoomRead — aspect-based sentiment analysis for hotel reviews.
 
 Pages
   Dashboard        What guests complain about most, from 31,219 reviews
-  Check a review   Analyse one pasted review sentence by sentence
+  Check a review   Analyse one pasted review part by part
   Upload reviews   Upload a CSV / Excel / TXT file and get your own ranking
   Model results    Test-set scores for RoBERTa, BERT and zero-shot BART
   About            How it works, data, limitations, author
 
-Inference logic (sentence split, keyword aspect tagger, input format, relevance
-gate at 0.55) is kept identical to the previously deployed app so predictions
-do not change.
+Reviews are split into sentences and then into clauses (at "but", "and",
+"however", "although" ...) so each part carries one opinion. Keywords are
+matched as words, not substrings. Input format and relevance gate (0.55)
+are unchanged.
 """
 
 import html
@@ -78,20 +79,24 @@ RELEVANCE_LABELS = [
 ]
 
 ASPECT_KEYWORDS = {
-    "Room quality": ["room", "bed", "pillow", "bathroom", "shower", "clean", "dirty", "smell",
-                     "noisy", "air condition", "ac ", "view", "dust"],
-    "Staff & Service": ["staff", "service", "receptionist", "front desk", "concierge", "employee",
-                        "manager", "helpful", "rude", "friendly"],
-    "Food & Beverage": ["breakfast", "food", "restaurant", "buffet", "dinner", "lunch", "meal",
-                        "coffee", "bar ", "drink"],
-    "Location": ["location", "located", "walk", "distance", "nearby", "downtown", "beach",
-                 "airport", "transport"],
-    "Value for money": ["price", "value", "expensive", "cheap", "worth", "cost", "money",
-                        "overpriced", "affordable"],
-    "Facilities": ["pool", "gym", "wifi", "parking", "spa", "elevator", "facility", "facilities",
-                   "amenities"],
-    "Overall": ["overall", "stay", "hotel", "experience", "recommend", "trip", "manage", "manag"],
+    "Room quality": ["room", "bed", "pillow", "bathroom", "shower", "toilet", "towel", "sheet", "clean",
+                     "dirty", "smell", "noisy", "noise", "air condition", "ac", "view", "dust", "tv",
+                     "television"],
+    "Staff & Service": ["staff", "service", "reception", "front desk", "concierge", "employee", "manager",
+                        "housekeep", "waiter", "waitress", "helpful", "rude", "friendly"],
+    "Food & Beverage": ["breakfast", "food", "restaurant", "buffet", "dinner", "lunch", "meal", "coffee",
+                        "bar", "drink", "menu"],
+    "Location": ["location", "located", "walk", "distance", "nearby", "downtown", "beach", "airport",
+                 "transport", "station"],
+    "Value for money": ["price", "pricey", "value", "expensive", "cheap", "worth", "cost", "money",
+                        "overpriced", "overcharg", "affordable"],
+    "Facilities": ["pool", "gym", "wifi", "wi-fi", "wi fi", "internet", "parking", "spa", "elevator", "lift",
+                   "facility", "facilities", "amenities"],
+    "Overall": ["overall", "stay", "hotel", "experience", "recommend", "trip", "manag"],
 }
+# Short words that must match as whole words (optionally plural), so "spa" doesn't match
+# "spacious", "view" doesn't match "review" and "bar" doesn't match "barely".
+WHOLE_WORDS = {"ac", "bar", "spa", "gym", "tv", "lift", "view", "bed", "menu"}
 ASPECTS = list(ASPECT_KEYWORDS)
 
 ASPECT_ACTIONS = {
@@ -133,7 +138,7 @@ BODY_FONT = "Nunito, 'Segoe UI', Arial, sans-serif"
 
 
 # =====================================================================
-# TEXT PROCESSING (unchanged from the deployed app)
+# TEXT PROCESSING
 # =====================================================================
 def split_sentences(text):
     text = re.sub(r"([.!?])([A-Z])", r"\1 \2", text)
@@ -141,14 +146,49 @@ def split_sentences(text):
     return [p.strip() for p in parts if p.strip()]
 
 
+CLAUSE_BREAK = re.compile(
+    r"(?<=;)\s+|\s+(?=(?:but|however|although|though|whereas|yet|except|and)\b)", re.IGNORECASE)
+
+
+def split_clauses(sentence):
+    """Split a sentence at 'but', 'and', 'however', ... so each part carries one opinion.
+    Parts shorter than three words are joined back, so 'clean and comfortable' or
+    'bed and breakfast' stay together."""
+    pieces = [sentence]
+    lead = re.match(r"\s*(?:even though|although|though|whilst|while)\b[^,]*,\s*", sentence, re.IGNORECASE)
+    if lead and len(sentence[lead.end():].split()) >= 3:
+        pieces = [sentence[:lead.end()].strip(), sentence[lead.end():]]
+    out = []
+    for piece in (p for chunk in pieces for p in CLAUSE_BREAK.split(chunk)):
+        piece = piece.strip()
+        if not piece:
+            continue
+        if out and (len(piece.split()) < 3 or len(out[-1].split()) < 3):
+            out[-1] = f"{out[-1]} {piece}"
+        else:
+            out.append(piece)
+    return out
+
+
+def split_review(text):
+    """Review -> list of short parts (clauses), in reading order."""
+    return [clause for sent in split_sentences(text) for clause in split_clauses(sent)]
+
+
+def _keyword_pattern(kw):
+    tail = r"s?\b" if kw in WHOLE_WORDS else ""
+    return re.compile(r"\b" + re.escape(kw) + tail, re.IGNORECASE)
+
+
+ASPECT_PATTERNS = {asp: [(kw, _keyword_pattern(kw)) for kw in kws] for asp, kws in ASPECT_KEYWORDS.items()}
+
+
 def detect_aspects(sentence):
-    s = sentence.lower()
-    return [asp for asp, kws in ASPECT_KEYWORDS.items() if any(kw in s for kw in kws)]
+    return [asp for asp, pats in ASPECT_PATTERNS.items() if any(p.search(sentence) for _, p in pats)]
 
 
 def matched_keywords(sentence, aspect):
-    s = sentence.lower()
-    return sorted({kw.strip() for kw in ASPECT_KEYWORDS[aspect] if kw in s})
+    return sorted({kw for kw, p in ASPECT_PATTERNS[aspect] if p.search(sentence)})
 
 
 def build_input_text(sentence, aspect):
@@ -220,7 +260,7 @@ def check_relevance(text):
         return False, 0.0, "length"
     pipe = load_relevance_model(RELEVANCE_MODEL)
     if pipe is None:
-        has_aspect = any(detect_aspects(s) for s in split_sentences(text))
+        has_aspect = any(detect_aspects(s) for s in split_review(text))
         return has_aspect, 1.0 if has_aspect else 0.0, "keywords"
     out = pipe(text[:600], RELEVANCE_LABELS, truncation=True)
     scores = dict(zip(out["labels"], out["scores"]))
@@ -240,7 +280,7 @@ def flag_for(sentiment, confidence):
 @st.cache_data(max_entries=256, show_spinner=False)
 def analyse_review(text, model_id):
     ok, review_score, method = check_relevance(text)
-    sentences = split_sentences(text)
+    sentences = split_review(text)
     if not ok:
         return {"status": "rejected", "score": review_score, "method": method, "sentences": sentences}
 
@@ -328,6 +368,19 @@ MCNEMAR["Result at α = 0.05"] = np.where(MCNEMAR["p-value"] < 0.05, "Significan
 # =====================================================================
 CSS = f"""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+/* Brand colours set here too, so the look is right even if .streamlit/config.toml isn't picked up */
+.stApp, .stApp p, .stApp label, .stApp button, .stApp textarea, .stApp input, .stApp li,
+.stApp h1, .stApp h2, .stApp h3 {{ font-family: {BODY_FONT}; }}
+[data-testid="stBaseButton-primary"] {{ background: {TEAL} !important; border-color: {TEAL} !important; color: #fff !important; }}
+[data-testid="stBaseButton-primary"]:hover {{ background: {BLUE_GREEN} !important; border-color: {BLUE_GREEN} !important; }}
+[data-testid="stBaseButton-secondary"]:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
+button[data-variant="pills"][aria-checked="true"] {{ background: rgba(0,128,128,.12) !important;
+    color: {TEAL} !important; border-color: {TEAL} !important; }}
+button[data-variant="pills"]:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
+[data-testid="stTextAreaRootElement"] {{ background: {SOFT_BG} !important; }}
+[data-testid="stTextAreaRootElement"]:focus-within {{ border-color: {TEAL} !important; }}
 .block-container {{ max-width: 1150px; padding-top: 4.6rem; padding-bottom: 2rem; }}
 
 /* Top bar */
@@ -619,13 +672,13 @@ def render_single(res):
     st.html(f'<div class="rr-read">{"".join(spans)}</div><div class="rr-legend">{legend}</div>')
 
     with st.expander("Show details"):
-        table = df.rename(columns={"sentence_no": "#", "sentence": "Sentence", "aspect": "Area",
+        table = df.rename(columns={"sentence_no": "#", "sentence": "Review part", "aspect": "Area",
                                    "sentiment": "Sentiment", "confidence": "Confidence",
                                    "check": "Note", "matched_words": "Matched words"})
         st.dataframe(
             table, hide_index=True, width="stretch",
-            column_order=["#", "Sentence", "Area", "Sentiment", "Confidence", "Note", "Matched words"],
-            column_config={"Sentence": st.column_config.TextColumn(width="large"),
+            column_order=["#", "Review part", "Area", "Sentiment", "Confidence", "Note", "Matched words"],
+            column_config={"Review part": st.column_config.TextColumn(width="large"),
                            "Confidence": st.column_config.ProgressColumn(format="%.2f", min_value=0,
                                                                          max_value=1, color=TEAL)},
         )
@@ -711,7 +764,7 @@ def run_file_analysis(reviews, use_gate):
 
     meta, pairs = [], []
     for r_no, rv in enumerate(kept, start=1):
-        for s_no, sent in enumerate(split_sentences(rv), start=1):
+        for s_no, sent in enumerate(split_review(rv), start=1):
             for asp in detect_aspects(sent):
                 pairs.append((sent, asp))
                 meta.append({"review_no": r_no, "sentence_no": s_no, "sentence": sent, "aspect": asp})
@@ -860,13 +913,14 @@ def page_model():
 # =====================================================================
 def page_about():
     page_title("About this project", 
-                                     "RoomRead looks at each sentence of a review and works out what the guest is "
+                                     "RoomRead looks at each part of a review and works out what the guest is "
                                      "talking about and how they feel about it.")
     steps = [
-        ("Split the review into sentences", "So one review can praise the room and criticise the breakfast."),
+        ("Split the review into parts", "Sentences are split at words like 'but' and 'and', so one review "
+                                         "can praise the room and criticise the breakfast."),
         ("Check that it's a hotel review", f"A zero-shot model filters out unrelated text "
                                            f"(it needs a score of {RELEVANCE_THRESHOLD:.2f} or more)."),
-        ("Find what each sentence is about", "Keywords match each sentence to one or more of seven areas: "
+        ("Find what each part is about", "Keywords match each part to one or more of seven areas: "
                                              + ", ".join(ASPECTS) + "."),
         ("Predict the sentiment", "A fine-tuned RoBERTa model labels each area as positive, negative or neutral."),
         ("Rank the areas", "For many reviews, each area is scored by the share of reviews that complain about it."),
