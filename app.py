@@ -134,30 +134,8 @@ BORDER = "#D5E8EE"
 SOFT_BG = "#F2F9FB"
 SENT_COLOURS = {"positive": TEAL, "negative": "#D64545", "neutral": "#8A94A6", "mixed": NAVY}
 TIER_COLOURS = {"Critical": MIDNIGHT, "High": TEAL, "Watch": ROBIN}
-PAGE_BG = "#FAFCFC"
-BODY_FONT = "Nunito, 'Segoe UI', Arial, sans-serif"
-DISPLAY_FONT = "'Cormorant Garamond', Georgia, serif"
-
-
-def _hero_background():
-    """Dark tint over hero.jpg / hero.png if one is in the repo folder, tint alone otherwise."""
-    import base64
-    # Lighter tint over a photo (so it shows through), heavier when there is no photo.
-    photo_tint = ("linear-gradient(100deg, rgba(25,25,112,.88) 0%, rgba(16,54,74,.70) 45%, "
-                  "rgba(0,128,128,.42) 100%)")
-    plain_tint = ("linear-gradient(115deg, rgba(25,25,112,.97) 0%, rgba(0,64,80,.90) 55%, "
-                  "rgba(0,128,128,.82) 100%)")
-    for name in ("hero.jpg", "hero.jpeg", "hero.png", "hero.webp"):
-        f = APP_DIR / name
-        if f.exists():
-            suffix = f.suffix.lower()
-            mime = "png" if suffix == ".png" else ("webp" if suffix == ".webp" else "jpeg")
-            data = base64.b64encode(f.read_bytes()).decode()
-            return f'{photo_tint}, url("data:image/{mime};base64,{data}")'
-    return f"{plain_tint}, linear-gradient(160deg, {MIDNIGHT}, {TEAL})"
-
-
-HERO_BG = _hero_background()
+PAGE_BG = "#FFFFFF"
+BODY_FONT = "'Times New Roman', Times, serif"
 
 
 # =====================================================================
@@ -397,157 +375,129 @@ MCNEMAR["Result at α = 0.05"] = np.where(MCNEMAR["p-value"] < 0.05, "Significan
 # =====================================================================
 CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Nunito:wght@400;600;700;800&display=swap');
-
-/* ---------- Base ---------- */
-.stApp {{ background: {PAGE_BG}; }}
-.stApp, .stApp p, .stApp label, .stApp button, .stApp textarea, .stApp input, .stApp li,
-.stApp table {{ font-family: {BODY_FONT}; }}
-/* never touch the icon font */
+/* ---------- Base: Times New Roman everywhere ---------- */
+html, body, .stApp, .stApp *, [data-testid="stSidebar"] * {{
+    font-family: {BODY_FONT} !important; }}
 [data-testid="stIconMaterial"], .material-symbols-rounded, span[class*="material"] {{
-    font-family: "Material Symbols Rounded" !important; text-transform: none !important;
-    letter-spacing: normal !important; }}
-.block-container {{ max-width: 1180px; padding-top: 4.4rem; padding-bottom: 1rem; }}
+    font-family: "Material Symbols Rounded" !important; }}
+.stApp {{ background: {PAGE_BG}; }}
+.block-container {{ max-width: 1080px; padding-top: 3.4rem; padding-bottom: 1rem; }}
+p, li, label {{ font-size: 1.02rem; }}
 
-/* ---------- Widgets in brand colours (works even without config.toml) ---------- */
-[data-testid="stBaseButton-primary"] {{ background: {TEAL} !important; border-color: {TEAL} !important;
-    color: #fff !important; letter-spacing: .04em; font-weight: 700; }}
-[data-testid="stBaseButton-primary"]:hover {{ background: {MIDNIGHT} !important; border-color: {MIDNIGHT} !important; }}
-[data-testid="stBaseButton-secondary"]:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
-button[data-variant="pills"][aria-checked="true"] {{ background: rgba(0,128,128,.10) !important;
-    color: {TEAL} !important; border-color: {TEAL} !important; }}
-button[data-variant="pills"]:hover {{ border-color: {TEAL} !important; color: {TEAL} !important; }}
-[data-testid="stTextAreaRootElement"] {{ background: #fff !important; }}
-[data-testid="stTextAreaRootElement"]:focus-within {{ border-color: {TEAL} !important; }}
+/* ---------- Widgets ---------- */
+[data-testid="stBaseButton-primary"] {{ background: {MIDNIGHT} !important; border: 1px solid {MIDNIGHT} !important;
+    color: #fff !important; border-radius: 2px; }}
+[data-testid="stBaseButton-primary"]:hover {{ background: {TEAL} !important; border-color: {TEAL} !important; }}
+[data-testid="stBaseButton-secondary"] {{ border-radius: 2px; }}
+[data-testid="stBaseButton-secondary"]:hover {{ border-color: {MIDNIGHT} !important; color: {MIDNIGHT} !important; }}
+button[data-variant="pills"] {{ border-radius: 2px; }}
+button[data-variant="pills"][aria-checked="true"] {{ background: #fff !important;
+    color: {MIDNIGHT} !important; border-color: {MIDNIGHT} !important; }}
+button[data-variant="pills"]:hover {{ border-color: {MIDNIGHT} !important; color: {MIDNIGHT} !important; }}
+[data-testid="stTextAreaRootElement"] {{ background: #fff !important; border-radius: 2px; }}
+[data-testid="stTextAreaRootElement"]:focus-within {{ border-color: {MIDNIGHT} !important; }}
+[data-testid="stExpander"] details {{ border-radius: 2px; }}
 
 /* ---------- Top bar ---------- */
-header[data-testid="stHeader"] {{ background: {MIDNIGHT} !important;
-    border-bottom: 1px solid rgba(150,222,209,.25); }}
+header[data-testid="stHeader"] {{ background: {MIDNIGHT} !important; }}
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] {{ border-radius: 0; }}
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] p,
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] span:not([data-testid="stIconMaterial"]) {{
-    color: #EAF2F6 !important; font-size: .8rem; letter-spacing: .06em; font-weight: 600; }}
-header[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover {{ background: transparent !important; }}
-header[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover p,
-header[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover span:not([data-testid="stIconMaterial"]) {{ color: {ROBIN} !important; }}
+    color: #FFFFFF !important; font-size: 1rem; }}
+header[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover {{ background: rgba(255,255,255,.10) !important; }}
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"][aria-current="page"] {{
-    background: transparent !important; box-shadow: inset 0 -2px 0 {ROBIN}; }}
-header[data-testid="stHeader"] a[data-testid="stTopNavLink"][aria-current="page"] p,
-header[data-testid="stHeader"] a[data-testid="stTopNavLink"][aria-current="page"] span:not([data-testid="stIconMaterial"]) {{ color: #fff !important; }}
+    background: rgba(255,255,255,.16) !important; }}
 header[data-testid="stHeader"] button,
 header[data-testid="stHeader"] [data-testid="stMainMenuButton"],
 header[data-testid="stHeader"] [data-testid="stIconMaterial"] {{ color: #FFFFFF !important; }}
 section[data-testid="stSidebar"] {{ background: {MIDNIGHT} !important; }}
 section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"] span,
 section[data-testid="stSidebar"] [data-testid="stIconMaterial"] {{ color: #FFFFFF !important; }}
-section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current="page"] {{ background: {TEAL} !important; }}
+section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current="page"] {{
+    background: rgba(255,255,255,.16) !important; }}
 
-/* ---------- Hero ---------- */
-.rr-hero {{ position: relative; overflow: hidden; padding: 4.2rem 3.2rem;
-            background: {HERO_BG}; background-size: cover; background-position: center;
-            margin-bottom: 2.4rem; }}
-.rr-hero::after {{ content: ""; position: absolute; inset: 18px; border: 1px solid rgba(255,255,255,.22);
-                   pointer-events: none; }}
-.rr-eyebrow {{ color: {ROBIN}; font-size: .72rem; letter-spacing: .28em; text-transform: uppercase;
-               font-weight: 700; margin-bottom: 1rem; }}
-.rr-hero h1 {{ font-family: {DISPLAY_FONT}; color: #fff; font-size: 3.3rem; font-weight: 400;
-               line-height: 1.1; letter-spacing: .01em; margin: 0 0 1rem; padding: 0; max-width: 24ch; }}
-.rr-hero p {{ color: rgba(255,255,255,.82); font-size: 1.05rem; line-height: 1.65; margin: 0 0 1.9rem;
-              max-width: 54ch; }}
-.rr-hero a {{ display: inline-block; border: 1px solid {ROBIN}; color: #fff !important; text-decoration: none;
-              font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 700;
-              padding: .95rem 2.1rem; transition: background .2s, color .2s; }}
-.rr-hero a:hover {{ background: {ROBIN}; color: {MIDNIGHT} !important; }}
+/* ---------- Header block on the dashboard ---------- */
+.rr-hero {{ border-top: 3px solid {MIDNIGHT}; border-bottom: 1px solid {BORDER};
+            padding: 1.6rem 0 1.5rem; margin-bottom: 1.8rem; }}
+.rr-hero h1 {{ color: {MIDNIGHT}; font-size: 2rem; font-weight: 700; line-height: 1.25;
+               margin: 0 0 .6rem; padding: 0; }}
+.rr-hero p {{ color: {TEXT}; font-size: 1.05rem; line-height: 1.6; margin: 0 0 1.2rem; max-width: 76ch; }}
+.rr-hero a {{ display: inline-block; border: 1px solid {MIDNIGHT}; color: {MIDNIGHT} !important;
+              text-decoration: none; padding: .5rem 1.3rem; font-size: 1rem; }}
+.rr-hero a:hover {{ background: {MIDNIGHT}; color: #fff !important; }}
 
 /* ---------- Page headings ---------- */
-.rr-title {{ margin-bottom: 1.8rem; }}
-.rr-title h1 {{ font-family: {DISPLAY_FONT}; color: {MIDNIGHT}; font-size: 2.5rem; font-weight: 400;
-                line-height: 1.15; margin: 0 0 .6rem; padding: 0; }}
-.rr-title p {{ color: {MUTED}; font-size: 1.02rem; line-height: 1.65; margin: 0; max-width: 68ch; }}
-.rr-h {{ font-family: {DISPLAY_FONT}; color: {MIDNIGHT}; font-size: 1.55rem; font-weight: 500;
-         margin: .2rem 0 1rem; letter-spacing: .01em; }}
-.rr-h::after {{ content: ""; display: block; width: 42px; height: 2px; background: {TEAL}; margin-top: .6rem; }}
+.rr-title {{ border-bottom: 1px solid {BORDER}; padding-bottom: 1rem; margin-bottom: 1.6rem; }}
+.rr-title h1 {{ color: {MIDNIGHT}; font-size: 1.85rem; font-weight: 700; line-height: 1.25;
+                margin: 0 0 .5rem; padding: 0; }}
+.rr-title p {{ color: {TEXT}; font-size: 1.02rem; line-height: 1.6; margin: 0; max-width: 78ch; }}
+.rr-h {{ color: {MIDNIGHT}; font-size: 1.22rem; font-weight: 700; margin: .2rem 0 .8rem;
+         padding-bottom: .4rem; border-bottom: 1px solid {BORDER}; }}
 
-/* ---------- Stat cards ---------- */
-.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 0 0 2.4rem;
-             border: 1px solid {BORDER}; background: #fff; }}
-.rr-card {{ padding: 1.7rem 1.5rem; border-right: 1px solid {BORDER}; }}
+/* ---------- Figures ---------- */
+.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 0 0 1.8rem;
+             border: 1px solid {BORDER}; }}
+.rr-card {{ padding: 1rem 1.1rem; border-right: 1px solid {BORDER}; }}
 .rr-card:last-child {{ border-right: none; }}
-.rr-card .v {{ font-family: {DISPLAY_FONT}; color: {MIDNIGHT}; font-size: 2.1rem; font-weight: 500;
-               line-height: 1.1; }}
-.rr-card .l {{ color: {MUTED}; font-size: .74rem; letter-spacing: .13em; text-transform: uppercase;
-               margin-top: .6rem; font-weight: 600; line-height: 1.5; }}
-.rr-card.accent {{ background: {SOFT_BG}; }}
-.rr-card.accent .v {{ color: {TEAL}; font-size: 1.7rem; }}
+.rr-card .v {{ color: {MIDNIGHT}; font-size: 1.7rem; font-weight: 700; line-height: 1.15; }}
+.rr-card .l {{ color: {MUTED}; font-size: .92rem; margin-top: .25rem; line-height: 1.4; }}
+.rr-card.accent .v {{ font-size: 1.35rem; }}
 
 /* ---------- Ranked list ---------- */
-.rr-issue {{ display: flex; gap: 20px; align-items: flex-start; background: #fff; border: 1px solid {BORDER};
-             padding: 1.3rem 1.4rem; margin-bottom: 12px; transition: border-color .2s; }}
-.rr-issue:hover {{ border-color: {TEAL}; }}
-.rr-num {{ flex: none; width: 38px; height: 38px; border: 1px solid {TEAL}; color: {TEAL};
-           font-family: {DISPLAY_FONT}; font-size: 1.3rem; display: flex; align-items: center;
-           justify-content: center; }}
-.rr-issue b {{ color: {MIDNIGHT}; font-size: 1.02rem; }}
-.rr-issue .pct {{ color: {TEAL}; font-weight: 700; margin-left: .5rem; }}
-.rr-issue p {{ color: {MUTED}; font-size: .92rem; margin: .4rem 0 0; line-height: 1.6; }}
+.rr-issue {{ display: flex; gap: 14px; align-items: flex-start; border-bottom: 1px solid {BORDER};
+             padding: .85rem 0; }}
+.rr-issue:last-child {{ border-bottom: none; }}
+.rr-num {{ flex: none; width: 26px; height: 26px; border: 1px solid {MIDNIGHT}; color: {MIDNIGHT};
+           font-size: .95rem; display: flex; align-items: center; justify-content: center; }}
+.rr-issue b {{ color: {MIDNIGHT}; font-size: 1.05rem; }}
+.rr-issue .pct {{ color: {MIDNIGHT}; font-weight: 700; margin-left: .4rem; }}
+.rr-issue p {{ color: {TEXT}; font-size: .98rem; margin: .3rem 0 0; line-height: 1.55; }}
 
 /* ---------- Review result ---------- */
-.rr-summary {{ background: #fff; border: 1px solid {BORDER}; border-left: 3px solid {TEAL};
-               padding: 1.1rem 1.3rem; color: {TEXT}; font-size: 1.05rem; margin: 0 0 1.6rem; }}
-.rr-tiles {{ display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 2rem; }}
-.rr-tile {{ background: #fff; border: 1px solid {BORDER}; border-bottom-width: 3px; padding: .9rem 1.2rem;
-            min-width: 155px; }}
-.rr-tile .a {{ color: {MUTED}; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
-               font-weight: 600; }}
-.rr-tile .s {{ font-weight: 700; text-transform: capitalize; font-size: 1.05rem; margin-top: .25rem; }}
-.rr-read {{ background: #fff; border: 1px solid {BORDER}; padding: 1.4rem 1.6rem; font-size: 1.05rem;
-            line-height: 2.1; color: {TEXT}; }}
-.rr-s-positive {{ background: rgba(0,128,128,.13); padding: 2px 3px; }}
-.rr-s-negative {{ background: rgba(214,69,69,.13); padding: 2px 3px; }}
-.rr-s-neutral  {{ background: rgba(138,148,166,.16); padding: 2px 3px; }}
-.rr-s-mixed    {{ background: rgba(0,0,128,.10); padding: 2px 3px; }}
+.rr-summary {{ border: 1px solid {BORDER}; border-left: 3px solid {MIDNIGHT}; padding: .8rem 1rem;
+               color: {TEXT}; font-size: 1.05rem; margin: 0 0 1.3rem; }}
+.rr-tiles {{ display: inline-flex; flex-wrap: wrap; gap: 0; margin-bottom: 1.6rem;
+             border: 1px solid {BORDER}; border-right: none; max-width: 100%; }}
+.rr-tile {{ padding: .7rem 1.1rem; min-width: 150px; border-right: 1px solid {BORDER}; }}
+.rr-tile .a {{ color: {MUTED}; font-size: .92rem; }}
+.rr-tile .s {{ font-weight: 700; text-transform: capitalize; font-size: 1.05rem; }}
+.rr-read {{ border: 1px solid {BORDER}; padding: 1.1rem 1.3rem; font-size: 1.08rem; line-height: 2;
+            color: {TEXT}; }}
+.rr-s-positive {{ background: rgba(0,128,128,.13); }}
+.rr-s-negative {{ background: rgba(179,38,30,.12); }}
+.rr-s-neutral  {{ background: rgba(138,148,166,.16); }}
+.rr-s-mixed    {{ background: rgba(0,0,128,.10); }}
 .rr-s-none     {{ color: {MUTED}; }}
-.rr-tag {{ display: inline-block; font-size: .66rem; font-weight: 700; letter-spacing: .08em;
-           text-transform: uppercase; color: #fff; padding: 2px 9px; margin: 0 5px; vertical-align: 2px; }}
-.rr-legend {{ display: flex; gap: 1.4rem; flex-wrap: wrap; font-size: .8rem; color: {MUTED};
-              letter-spacing: .04em; margin: .9rem 0 1.4rem; }}
-.rr-legend i {{ display: inline-block; width: 14px; height: 10px; margin-right: 7px; vertical-align: 0; }}
+.rr-tag {{ display: inline-block; font-size: .8rem; color: #fff; padding: 0 7px; margin: 0 4px;
+           vertical-align: 1px; }}
+.rr-legend {{ display: flex; gap: 1.3rem; flex-wrap: wrap; font-size: .95rem; color: {MUTED};
+              margin: .7rem 0 1.3rem; }}
+.rr-legend i {{ display: inline-block; width: 13px; height: 11px; margin-right: 6px; }}
 
 /* ---------- Steps ---------- */
-.rr-step {{ display: flex; gap: 20px; align-items: flex-start; padding: 1.1rem 0;
+.rr-step {{ display: flex; gap: 14px; align-items: flex-start; padding: .8rem 0;
             border-bottom: 1px solid {BORDER}; }}
 .rr-step:last-child {{ border-bottom: none; }}
-.rr-step b {{ color: {MIDNIGHT}; font-size: 1.02rem; }}
-.rr-step p {{ color: {MUTED}; margin: .35rem 0 0; font-size: .93rem; line-height: 1.6; }}
+.rr-step b {{ color: {MIDNIGHT}; font-size: 1.05rem; }}
+.rr-step p {{ color: {TEXT}; margin: .25rem 0 0; font-size: .98rem; line-height: 1.55; }}
 
 /* ---------- Footer ---------- */
-.rr-foot {{ margin-top: 3.5rem; background: {MIDNIGHT}; color: rgba(255,255,255,.7);
-            padding: 2.4rem 2.6rem; text-align: center; }}
-.rr-foot .n {{ font-family: {DISPLAY_FONT}; color: #fff; font-size: 1.5rem; letter-spacing: .02em; }}
-.rr-foot .r {{ width: 40px; height: 1px; background: {ROBIN}; margin: 1rem auto; }}
-.rr-foot .m {{ font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; }}
+.rr-foot {{ margin-top: 2.6rem; border-top: 1px solid {BORDER}; padding: 1.1rem 0 .4rem;
+            color: {MUTED}; font-size: .95rem; display: flex; justify-content: space-between;
+            flex-wrap: wrap; gap: .4rem; }}
 
-
-
-@media (max-width: 900px) {{
+@media (max-width: 860px) {{
   .rr-cards {{ grid-template-columns: repeat(2, 1fr); }}
   .rr-card:nth-child(2) {{ border-right: none; }}
   .rr-card:nth-child(1), .rr-card:nth-child(2) {{ border-bottom: 1px solid {BORDER}; }}
-  .rr-hero {{ padding: 2.6rem 1.6rem; }}
-  .rr-hero::after {{ inset: 10px; }}
-  .rr-hero h1 {{ font-size: 2.1rem; }}
-  .rr-title h1 {{ font-size: 1.9rem; }}
+  .rr-hero h1 {{ font-size: 1.6rem; }}
+  .rr-title h1 {{ font-size: 1.5rem; }}
 }}
 </style>
 """
 
-LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="210" height="40" viewBox="0 0 210 40">
-<rect x="2" y="7" width="24" height="28" rx="2" fill="none" stroke="#96DED1" stroke-width="1.6"/>
-<rect x="7" y="12" width="4" height="4" fill="#96DED1"/><rect x="17" y="12" width="4" height="4" fill="#96DED1"/>
-<rect x="7" y="20" width="4" height="4" fill="#96DED1"/><rect x="17" y="20" width="4" height="4" fill="#96DED1"/>
-<rect x="12" y="28" width="4" height="7" fill="#96DED1"/>
-<text x="36" y="24" font-family="Cormorant Garamond, Georgia, serif" font-size="21" fill="#FFFFFF">RoomRead</text>
-<text x="37" y="34" font-family="Nunito, Arial, sans-serif" font-size="6.5" letter-spacing="2.6" fill="#96DED1">REVIEW INTELLIGENCE</text>
+LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="200" height="36" viewBox="0 0 200 36">
+<text x="0" y="25" font-family="Times New Roman, Times, serif" font-size="24" fill="#FFFFFF">RoomRead</text>
 </svg>"""
 
 
@@ -561,16 +511,14 @@ def setup_page():
     st.html(CSS)
 
 
-def page_title(title, text, eyebrow=None):
-    eb = f'<div class="rr-eyebrow" style="color:{TEAL}">{esc(eyebrow)}</div>' if eyebrow else ""
-    st.html(f'<div class="rr-title">{eb}<h1>{esc(title)}</h1><p>{text}</p></div>')
+def page_title(title, text):
+    st.html(f'<div class="rr-title"><h1>{esc(title)}</h1><p>{text}</p></div>')
 
 
 def footer():
     st.html("""<div class="rr-foot">
-        <div class="n">RoomRead</div>
-        <div class="r"></div>
-        <div class="m">Nethika Alagarathnam &nbsp;&middot;&nbsp; 2026</div>
+        <span>RoomRead &mdash; aspect-based sentiment analysis for hotel reviews</span>
+        <span>Nethika Alagarathnam, 2026</span>
       </div>""")
 
 
@@ -578,8 +526,8 @@ def plotly_base(fig, height):
     fig.update_layout(
         height=height, margin=dict(l=8, r=16, t=10, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family=BODY_FONT, size=13, color=TEXT),
-        hoverlabel=dict(font_family=BODY_FONT),
+        font=dict(family="Times New Roman, Times, serif", size=14, color=TEXT),
+        hoverlabel=dict(font_family="Times New Roman, Times, serif"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
     )
     return fig
@@ -641,10 +589,10 @@ def page_dashboard():
     best = MODEL_RESULTS.iloc[0]
 
     st.html(f"""<div class="rr-hero">
-        <div class="rr-eyebrow">Aspect-based review intelligence</div>
-        <h1>Know exactly what your guests are unhappy about</h1>
-        <p>RoomRead reads each part of a guest review, works out which part of the stay it refers to,
-        and ranks the areas that need attention first. Built on {BENCHMARK_REVIEWS:,} hotel reviews.</p>
+        <h1>Hotel Review Analysis</h1>
+        <p>RoomRead reads each part of a guest review, identifies which area of the stay it refers to,
+        and ranks the areas guests complain about most. The figures below are based on
+        {BENCHMARK_REVIEWS:,} hotel reviews.</p>
         <a href="check" target="_self">Check a review</a>
       </div>
       <div class="rr-cards">
@@ -781,8 +729,7 @@ def render_single(res):
 
 
 def page_check():
-    page_title("Check a review", "Paste a guest review to see what they liked and what they didn't.",
-               eyebrow="Single review")
+    page_title("Check a review", "Paste a guest review to see what they liked and what they didn't.")
     st.session_state.setdefault("review_text", "")
     st.pills("Or try an example", list(SAMPLES), key="sample_choice", on_change=_load_sample)
     st.text_area("Review", key="review_text", height=170, label_visibility="collapsed",
@@ -883,8 +830,7 @@ def run_file_analysis(reviews, use_gate):
 
 def page_file():
     page_title("Upload reviews", "Upload your hotel's reviews and see which areas guests complain about most. "
-                                 "CSV, Excel or a text file with one review per line.",
-               eyebrow="Your own data")
+                                 "CSV, Excel or a text file with one review per line.")
     up = st.file_uploader("Reviews file", type=["csv", "xlsx", "txt"], label_visibility="collapsed")
     if up is None:
         st.caption("Tip: start with around 100 reviews. Larger files take a few minutes.")
@@ -969,8 +915,7 @@ def page_file():
 # =====================================================================
 def page_model():
     page_title("Model results", "Three models were tested on 1,692 hand-labelled examples from the OATS-Hotels "
-                                "dataset. Fine-tuned RoBERTa did best and is the one used in this app.",
-               eyebrow="Evaluation")
+                                "dataset. Fine-tuned RoBERTa did best and is the one used in this app.")
     fig = go.Figure()
     fig.add_bar(x=MODEL_RESULTS["Model"], y=MODEL_RESULTS["Accuracy"], name="Accuracy", marker_color=MIDNIGHT,
                 text=[f"{v:.3f}" for v in MODEL_RESULTS["Accuracy"]], textposition="outside")
@@ -1009,8 +954,7 @@ def page_model():
 def page_about():
     page_title("About this project",
                "RoomRead looks at each part of a review and works out what the guest is "
-               "talking about and how they feel about it.",
-               eyebrow="How it works")
+               "talking about and how they feel about it.")
     steps = [
         ("Split the review into parts", "Sentences are split at words like 'but' and 'and', so one review "
                                          "can praise the room and criticise the breakfast."),
