@@ -1027,7 +1027,7 @@ def page_about():
     left, right = st.columns([1.3, 1], gap="large")
     with left:
         st.html('<div class="rr-h">How it works</div>' + "".join(
-            f'<div class="rr-step"><b>Step {i} &mdash; {esc(t)}</b><p>{esc(d)}</p></div>'
+            f'<div class="rr-step"><b>Step {i} &ndash; {esc(t)}</b><p>{esc(d)}</p></div>'
             for i, (t, d) in enumerate(steps, start=1)))
     with right:
         st.html(f"""<div class="rr-h">Data</div>
