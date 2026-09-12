@@ -135,7 +135,7 @@ SOFT_BG = "#F2F9FB"
 SENT_COLOURS = {"positive": TEAL, "negative": "#D64545", "neutral": "#8A94A6", "mixed": NAVY}
 TIER_COLOURS = {"Critical": MIDNIGHT, "High": TEAL, "Watch": ROBIN}
 PAGE_BG = "#FFFFFF"
-BODY_FONT = "'Times New Roman', Times, serif"
+BODY_FONT = "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
 
 
 # =====================================================================
@@ -375,16 +375,15 @@ MCNEMAR["Result at α = 0.05"] = np.where(MCNEMAR["p-value"] < 0.05, "Significan
 # =====================================================================
 CSS = f"""
 <style>
-/* ---------- Base: Times New Roman everywhere ---------- */
+/* ---------- Base ---------- */
 html, body, .stApp, .stApp *, [data-testid="stSidebar"] * {{
     font-family: {BODY_FONT} !important; }}
 [data-testid="stIconMaterial"], .material-symbols-rounded, span[class*="material"] {{
     font-family: "Material Symbols Rounded" !important; }}
 .stApp {{ background: {PAGE_BG}; }}
-.block-container {{ max-width: none; padding: 3.2rem 3.5rem 1rem; }}
-@media (max-width: 640px) {{ .block-container {{ padding: 3rem 1.1rem 1rem; }} }}
-/* keep running text readable even on a wide screen */
-.rr-title p, .rr-hero p {{ max-width: 100ch; }}
+.block-container {{ max-width: none; padding: 5.6rem 3.5rem 1rem; }}
+@media (max-width: 640px) {{ .block-container {{ padding: 5rem 1.1rem 1rem; }} }}
+.rr-title p, .rr-hero p {{ max-width: 118ch; }}
 p, li, label {{ font-size: 1.02rem; }}
 
 /* ---------- Widgets ---------- */
@@ -423,8 +422,8 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 /* ---------- Header block on the dashboard ---------- */
 .rr-hero {{ border-top: 3px solid {MIDNIGHT}; border-bottom: 1px solid {BORDER};
             padding: 1.6rem 0 1.5rem; margin-bottom: 1.8rem; }}
-.rr-hero h1 {{ color: {MIDNIGHT}; font-size: 2rem; font-weight: 700; line-height: 1.25;
-               margin: 0 0 .6rem; padding: 0; }}
+.rr-hero h1 {{ color: {MIDNIGHT}; font-size: 2.4rem; font-weight: 600; line-height: 1.2;
+               letter-spacing: -.015em; margin: 0 0 .7rem; padding: 0; }}
 .rr-hero p {{ color: {TEXT}; font-size: 1.05rem; line-height: 1.6; margin: 0 0 1.2rem; max-width: 76ch; }}
 .rr-hero a {{ display: inline-block; border: 1px solid {MIDNIGHT}; color: {MIDNIGHT} !important;
               text-decoration: none; padding: .5rem 1.3rem; font-size: 1rem; }}
@@ -432,30 +431,37 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 
 /* ---------- Page headings ---------- */
 .rr-title {{ border-bottom: 1px solid {BORDER}; padding-bottom: 1rem; margin-bottom: 1.6rem; }}
-.rr-title h1 {{ color: {MIDNIGHT}; font-size: 1.85rem; font-weight: 700; line-height: 1.25;
-                margin: 0 0 .5rem; padding: 0; }}
+.rr-title h1 {{ color: {MIDNIGHT}; font-size: 2.1rem; font-weight: 600; line-height: 1.2;
+                letter-spacing: -.015em; margin: 0 0 .5rem; padding: 0; }}
 .rr-title p {{ color: {TEXT}; font-size: 1.02rem; line-height: 1.6; margin: 0; max-width: 78ch; }}
-.rr-h {{ color: {MIDNIGHT}; font-size: 1.22rem; font-weight: 700; margin: .2rem 0 .8rem;
-         padding-bottom: .4rem; border-bottom: 1px solid {BORDER}; }}
+.rr-h {{ color: {MIDNIGHT}; font-size: 1.18rem; font-weight: 600; margin: .2rem 0 .9rem;
+         padding-bottom: .5rem; border-bottom: 2px solid {MIDNIGHT}; }}
 
-/* ---------- Figures ---------- */
-.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 0 0 1.8rem;
-             border: 1px solid {BORDER}; }}
-.rr-card {{ padding: 1rem 1.1rem; border-right: 1px solid {BORDER}; }}
-.rr-card:last-child {{ border-right: none; }}
-.rr-card .v {{ color: {MIDNIGHT}; font-size: 1.7rem; font-weight: 700; line-height: 1.15; }}
-.rr-card .l {{ color: {MUTED}; font-size: .92rem; margin-top: .25rem; line-height: 1.4; }}
-.rr-card.accent .v {{ font-size: 1.35rem; }}
+/* ---------- Statistics band ---------- */
+.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 0 0 2.2rem;
+             background: {BORDER}; border: 1px solid {BORDER}; }}
+.rr-card {{ position: relative; background: #fff; padding: 1.45rem 1.5rem 1.5rem; }}
+.rr-card .l {{ color: {MUTED}; font-size: .78rem; font-weight: 600; letter-spacing: .06em;
+               text-transform: uppercase; line-height: 1.35; margin-bottom: .7rem; }}
+.rr-card .v {{ color: {MIDNIGHT}; font-size: 2.15rem; font-weight: 600; line-height: 1;
+               letter-spacing: -.02em; }}
+.rr-card .u {{ color: {MUTED}; font-size: .9rem; margin-top: .5rem; }}
+.rr-card .track {{ height: 4px; background: #EDF2F4; margin-top: .9rem; }}
+.rr-card .track span {{ display: block; height: 4px; background: {TEAL}; }}
+.rr-card.accent {{ background: #F7FAFB; }}
+.rr-card.accent::before {{ content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+                           background: {MIDNIGHT}; }}
+.rr-card.accent .v {{ font-size: 1.6rem; }}
 
 /* ---------- Ranked list ---------- */
-.rr-issue {{ display: flex; gap: 14px; align-items: flex-start; border-bottom: 1px solid {BORDER};
-             padding: .85rem 0; }}
+.rr-issue {{ display: flex; gap: 18px; align-items: baseline; border-bottom: 1px solid {BORDER};
+             padding: 1rem 0; }}
 .rr-issue:last-child {{ border-bottom: none; }}
-.rr-num {{ flex: none; width: 26px; height: 26px; border: 1px solid {MIDNIGHT}; color: {MIDNIGHT};
-           font-size: .95rem; display: flex; align-items: center; justify-content: center; }}
-.rr-issue b {{ color: {MIDNIGHT}; font-size: 1.05rem; }}
-.rr-issue .pct {{ color: {MIDNIGHT}; font-weight: 700; margin-left: .4rem; }}
-.rr-issue p {{ color: {TEXT}; font-size: .98rem; margin: .3rem 0 0; line-height: 1.55; }}
+.rr-issue .lead {{ flex: none; min-width: 66px; color: {TEAL}; font-size: 1.35rem; font-weight: 600;
+                   letter-spacing: -.01em; }}
+.rr-issue .lead.plain {{ color: {MUTED}; font-size: 1.05rem; font-weight: 600; min-width: 34px; }}
+.rr-issue b {{ color: {MIDNIGHT}; font-size: 1.02rem; font-weight: 600; }}
+.rr-issue p {{ color: {TEXT}; font-size: .96rem; margin: .3rem 0 0; line-height: 1.55; }}
 
 /* ---------- Review result ---------- */
 .rr-summary {{ border: 1px solid {BORDER}; border-left: 3px solid {MIDNIGHT}; padding: .8rem 1rem;
@@ -479,11 +485,10 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 .rr-legend i {{ display: inline-block; width: 13px; height: 11px; margin-right: 6px; }}
 
 /* ---------- Steps ---------- */
-.rr-step {{ display: flex; gap: 14px; align-items: flex-start; padding: .8rem 0;
-            border-bottom: 1px solid {BORDER}; }}
-.rr-step:last-child {{ border-bottom: none; }}
-.rr-step b {{ color: {MIDNIGHT}; font-size: 1.05rem; }}
-.rr-step p {{ color: {TEXT}; margin: .25rem 0 0; font-size: .98rem; line-height: 1.55; }}
+.rr-step {{ padding: .9rem 0 .9rem 1.1rem; border-left: 2px solid {BORDER}; }}
+.rr-step:hover {{ border-left-color: {TEAL}; }}
+.rr-step b {{ color: {MIDNIGHT}; font-size: 1.02rem; font-weight: 600; }}
+.rr-step p {{ color: {TEXT}; margin: .3rem 0 0; font-size: .96rem; line-height: 1.6; }}
 
 /* ---------- Footer ---------- */
 .rr-foot {{ margin-top: 3rem; border-top: 1px solid {BORDER}; padding: 1.1rem 0 .5rem;
@@ -500,7 +505,7 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 """
 
 LOGO_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="200" height="36" viewBox="0 0 200 36">
-<text x="0" y="25" font-family="Times New Roman, Times, serif" font-size="24" fill="#FFFFFF">RoomRead</text>
+<text x="0" y="25" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" font-size="21" font-weight="600" letter-spacing="0.5" fill="#FFFFFF">RoomRead</text>
 </svg>"""
 
 
@@ -526,8 +531,8 @@ def plotly_base(fig, height):
     fig.update_layout(
         height=height, margin=dict(l=8, r=16, t=10, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Times New Roman, Times, serif", size=14, color=TEXT),
-        hoverlabel=dict(font_family="Times New Roman, Times, serif"),
+        font=dict(family="Segoe UI, system-ui, Helvetica Neue, Arial, sans-serif", size=13, color=TEXT),
+        hoverlabel=dict(font_family="Segoe UI, system-ui, Helvetica Neue, Arial, sans-serif"),
         legend=dict(orientation="h", yanchor="bottom", y=1.0, x=0, title=None,
                     font=dict(size=13), bgcolor="rgba(0,0,0,0)"),
     )
@@ -554,8 +559,8 @@ def lollipop_chart(df):
                     color=[MIDNIGHT if p >= 40 else TEAL for p in d["pct_of_reviews"]],
                     line=dict(color="#FFFFFF", width=2)),
         text=[f"  {p:.1f}%" for p in d["pct_of_reviews"]], textposition="middle right",
-        textfont=dict(size=14, color=MIDNIGHT), cliponaxis=False, showlegend=False,
-        hovertemplate="%{y}<br>%{x:.1f}% of reviews contain a complaint<extra></extra>")
+        textfont=dict(size=13, color=MIDNIGHT), cliponaxis=False, showlegend=False,
+        hoverinfo="skip")
     fig.update_layout(
         xaxis=dict(range=[0, max(df["pct_of_reviews"].max() * 1.32, 10)], visible=False, **AXIS),
         yaxis=dict(automargin=True, tickfont=dict(size=14, color=TEXT), **AXIS))
@@ -609,8 +614,8 @@ def ranking_table(df, key):
 def top_issues(df, n=3):
     items = []
     for _, r in df.head(n).iterrows():
-        items.append(f"""<div class="rr-issue"><div class="rr-num">{int(r['priority_rank'])}</div>
-            <div><b>{esc(r['aspect_group'])}</b><span class="pct">{r['pct_of_reviews']:.1f}%</span>
+        items.append(f"""<div class="rr-issue"><div class="lead">{r['pct_of_reviews']:.1f}%</div>
+            <div><b>{esc(r['aspect_group'])}</b>
             <p>{esc(ASPECT_ACTIONS.get(r['aspect_group'], ''))}</p></div></div>""")
     st.html("".join(items))
 
@@ -631,10 +636,19 @@ def page_dashboard():
         <a href="check" target="_self">Check a review</a>
       </div>
       <div class="rr-cards">
-        <div class="rr-card"><div class="v">{BENCHMARK_REVIEWS:,}</div><div class="l">Reviews analysed</div></div>
-        <div class="rr-card accent"><div class="v">{esc(top['aspect_group'])}</div><div class="l">Most complained about</div></div>
-        <div class="rr-card"><div class="v">{top['pct_of_reviews']:.1f}%</div><div class="l">of reviews complain about it</div></div>
-        <div class="rr-card"><div class="v">{best['Accuracy'] * 100:.1f}%</div><div class="l">Model accuracy (RoBERTa)</div></div>
+        <div class="rr-card"><div class="l">Reviews analysed</div>
+             <div class="v">{BENCHMARK_REVIEWS:,}</div>
+             <div class="u">TripAdvisor hotel reviews</div></div>
+        <div class="rr-card accent"><div class="l">Needs attention first</div>
+             <div class="v">{esc(top['aspect_group'])}</div>
+             <div class="u">{top['pct_of_reviews']:.1f}% of reviews complain about it</div>
+             <div class="track"><span style="width:{min(top['pct_of_reviews'], 100):.1f}%"></span></div></div>
+        <div class="rr-card"><div class="l">Areas tracked</div>
+             <div class="v">{len(df)}</div>
+             <div class="u">{esc(', '.join(df['aspect_group'].head(3)))} and {len(df) - 3} more</div></div>
+        <div class="rr-card"><div class="l">Model accuracy</div>
+             <div class="v">{best['Accuracy'] * 100:.1f}%</div>
+             <div class="u">Fine-tuned RoBERTa, macro-F1 {best['Macro-F1']:.2f}</div></div>
       </div>""")
 
     left, right = st.columns([1.35, 1], gap="large")
@@ -724,7 +738,7 @@ def render_single(res):
         order = {a: r for a, r in zip(bench["aspect_group"], bench["priority_rank"])}
         negatives.sort(key=lambda a: order.get(a, 99))
         items = "".join(
-            f'<div class="rr-issue"><div class="rr-num">{i}</div><div><b>{esc(a)}</b>'
+            f'<div class="rr-issue"><div class="lead plain">{i}.</div><div><b>{esc(a)}</b>'
             f'<p>{esc(ASPECT_ACTIONS.get(a, ""))}</p></div></div>'
             for i, a in enumerate(negatives, start=1))
         st.html('<div class="rr-h">What to do about it</div>' + items)
@@ -920,11 +934,21 @@ def page_file():
     top = rk.iloc[0]
     skipped = f"{res['rejected']} rows skipped" if res["rejected"] else "No rows skipped"
 
+    gap = top["pct_of_reviews"] - bench_map.get(top["aspect_group"], 0.0)
     st.html(f"""<div class="rr-cards">
-        <div class="rr-card"><div class="v">{n:,}</div><div class="l">Reviews analysed</div></div>
-        <div class="rr-card accent"><div class="v">{esc(top['aspect_group'])}</div><div class="l">Most complained about</div></div>
-        <div class="rr-card"><div class="v">{top['pct_of_reviews']:.1f}%</div><div class="l">of your reviews complain about it</div></div>
-        <div class="rr-card"><div class="v">{len(pred):,}</div><div class="l">Comments found ({esc(skipped.lower())})</div></div>
+        <div class="rr-card"><div class="l">Your reviews analysed</div>
+             <div class="v">{n:,}</div>
+             <div class="u">{esc(skipped)}</div></div>
+        <div class="rr-card accent"><div class="l">Needs attention first</div>
+             <div class="v">{esc(top['aspect_group'])}</div>
+             <div class="u">{top['pct_of_reviews']:.1f}% of your reviews complain about it</div>
+             <div class="track"><span style="width:{min(top['pct_of_reviews'], 100):.1f}%"></span></div></div>
+        <div class="rr-card"><div class="l">Against all reviews</div>
+             <div class="v">{gap:+.1f} pts</div>
+             <div class="u">on {esc(top['aspect_group'].lower())}, vs {bench_map.get(top['aspect_group'], 0.0):.1f}% overall</div></div>
+        <div class="rr-card"><div class="l">Comments found</div>
+             <div class="v">{len(pred):,}</div>
+             <div class="u">across {len(rk)} areas of the stay</div></div>
       </div>""")
 
     left, right = st.columns([1.35, 1], gap="large")
@@ -962,13 +986,11 @@ def page_model():
     fig.add_scatter(x=d["Macro-F1"], y=d["Model"], mode="markers+text", name="Macro-F1",
                     marker=dict(size=14, color=TEAL, line=dict(color="#FFFFFF", width=2)),
                     text=[f"{v:.3f}" for v in d["Macro-F1"]], textposition="top center",
-                    textfont=dict(size=13, color=TEAL), cliponaxis=False,
-                    hovertemplate="%{y}<br>macro-F1 %{x:.3f}<extra></extra>")
+                    textfont=dict(size=12, color=TEAL), cliponaxis=False, hoverinfo="skip")
     fig.add_scatter(x=d["Accuracy"], y=d["Model"], mode="markers+text", name="Accuracy",
                     marker=dict(size=14, color=MIDNIGHT, line=dict(color="#FFFFFF", width=2)),
                     text=[f"{v:.3f}" for v in d["Accuracy"]], textposition="top center",
-                    textfont=dict(size=13, color=MIDNIGHT), cliponaxis=False,
-                    hovertemplate="%{y}<br>accuracy %{x:.3f}<extra></extra>")
+                    textfont=dict(size=12, color=MIDNIGHT), cliponaxis=False, hoverinfo="skip")
     fig.update_layout(
         xaxis=dict(range=[0.6, 0.98], showgrid=True, gridcolor="#F0F4F6", zeroline=False, showline=False,
                    ticks="", tickfont=dict(size=13, color=MUTED)),
@@ -979,12 +1001,12 @@ def page_model():
         show_chart(plotly_base(fig, 330))
     with right:
         st.html(f"""<div class="rr-h">Good to know</div>
-          <div class="rr-issue"><div><b>Accuracy</b><p>How many predictions were right overall. It looks high
-            for every model because most examples are positive.</p></div></div>
-          <div class="rr-issue"><div><b>Macro-F1</b><p>Treats positive, negative and neutral equally, so it is
-            the fairer score here.</p></div></div>
-          <div class="rr-issue"><div><b>Neutral is the hardest</b><p>There were only 38 neutral test examples,
-            so the app marks neutral results for a second look.</p></div></div>""")
+          <div class="rr-step"><b>Accuracy</b><p>How many predictions were right overall. It looks high
+            for every model because most examples are positive.</p></div>
+          <div class="rr-step"><b>Macro-F1</b><p>Treats positive, negative and neutral equally, so it is
+            the fairer score here.</p></div>
+          <div class="rr-step"><b>Neutral is the hardest</b><p>There were only 38 neutral test examples,
+            so the app marks neutral results for a second look.</p></div>""")
 
     c1, c2 = st.columns(2, gap="large")
     with c1:
@@ -1020,15 +1042,15 @@ def page_about():
     left, right = st.columns([1.3, 1], gap="large")
     with left:
         st.html('<div class="rr-h">How it works</div>' + "".join(
-            f'<div class="rr-step"><div class="rr-num">{i}</div><div><b>{esc(t)}</b><p>{esc(d)}</p></div></div>'
+            f'<div class="rr-step"><b>Step {i} &mdash; {esc(t)}</b><p>{esc(d)}</p></div>'
             for i, (t, d) in enumerate(steps, start=1)))
     with right:
         st.html(f"""<div class="rr-h">Data</div>
-          <div class="rr-issue"><div><p style="margin:0">The model was trained and tested on the OATS-Hotels dataset
-            (Chebolu et al., 2024). The dashboard comes from {BENCHMARK_REVIEWS:,} other hotel reviews.</p></div></div>
+          <div class="rr-step"><p style="margin:0">The model was trained and tested on the OATS-Hotels dataset
+            (Chebolu et al., 2024). The dashboard comes from {BENCHMARK_REVIEWS:,} other hotel reviews.</p></div>
           <div class="rr-h" style="margin-top:1rem">Limitations</div>
-          <div class="rr-issue"><div><p style="margin:0">Keyword matching can miss or mislabel areas. Neutral results
-            are the least reliable. It works in English only.</p></div></div>""")
+          <div class="rr-step"><p style="margin:0">Keyword matching can miss or mislabel areas. Neutral results
+            are the least reliable. It works in English only.</p></div>""")
          
 
 
