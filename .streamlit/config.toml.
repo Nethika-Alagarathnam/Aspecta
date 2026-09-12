@@ -2,14 +2,14 @@
 base = "light"
 primaryColor = "#191970"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F5F7F9"
+secondaryBackgroundColor = "#F2F5F7"
 textColor = "#23284A"
 linkColor = "#000080"
 borderColor = "#D5E8EE"
 showWidgetBorder = true
 baseRadius = "0.15rem"
-font = "serif"
-headingFont = "serif"
+font = "sans-serif"
+headingFont = "sans-serif"
 
 [client]
 toolbarMode = "viewer"
