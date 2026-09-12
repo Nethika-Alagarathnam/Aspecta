@@ -383,7 +383,7 @@ html, body, .stApp, .stApp *, [data-testid="stSidebar"] * {{
 .stApp {{ background: {PAGE_BG}; }}
 .block-container {{ max-width: none; padding: 5.6rem 3.5rem 1rem; }}
 @media (max-width: 640px) {{ .block-container {{ padding: 5rem 1.1rem 1rem; }} }}
-.rr-title p, .rr-hero p {{ max-width: 118ch; }}
+.rr-title p, .rr-hero p, .rr-title h1, .rr-hero h1 {{ max-width: none !important; }}
 p, li, label {{ font-size: 1.02rem; }}
 
 /* ---------- Widgets ---------- */
@@ -425,8 +425,9 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 .rr-hero h1 {{ color: {MIDNIGHT}; font-size: 2.4rem; font-weight: 600; line-height: 1.2;
                letter-spacing: -.015em; margin: 0 0 .7rem; padding: 0; }}
 .rr-hero p {{ color: {TEXT}; font-size: 1.05rem; line-height: 1.6; margin: 0 0 1.2rem; max-width: 76ch; }}
+.rr-cta {{ text-align: center; margin-top: 1.6rem; }}
 .rr-hero a {{ display: inline-block; border: 1px solid {MIDNIGHT}; color: {MIDNIGHT} !important;
-              text-decoration: none; padding: .5rem 1.3rem; font-size: 1rem; }}
+              text-decoration: none; padding: .6rem 1.8rem; font-size: 1rem; }}
 .rr-hero a:hover {{ background: {MIDNIGHT}; color: #fff !important; }}
 
 /* ---------- Page headings ---------- */
@@ -437,21 +438,14 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 .rr-h {{ color: {MIDNIGHT}; font-size: 1.18rem; font-weight: 600; margin: .2rem 0 .9rem;
          padding-bottom: .5rem; border-bottom: 2px solid {MIDNIGHT}; }}
 
-/* ---------- Statistics band ---------- */
-.rr-cards {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 0 0 2.2rem;
-             background: {BORDER}; border: 1px solid {BORDER}; }}
-.rr-card {{ position: relative; background: #fff; padding: 1.45rem 1.5rem 1.5rem; }}
-.rr-card .l {{ color: {MUTED}; font-size: .78rem; font-weight: 600; letter-spacing: .06em;
-               text-transform: uppercase; line-height: 1.35; margin-bottom: .7rem; }}
-.rr-card .v {{ color: {MIDNIGHT}; font-size: 2.15rem; font-weight: 600; line-height: 1;
-               letter-spacing: -.02em; }}
-.rr-card .u {{ color: {MUTED}; font-size: .9rem; margin-top: .5rem; }}
-.rr-card .track {{ height: 4px; background: #EDF2F4; margin-top: .9rem; }}
-.rr-card .track span {{ display: block; height: 4px; background: {TEAL}; }}
-.rr-card.accent {{ background: #F7FAFB; }}
-.rr-card.accent::before {{ content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-                           background: {MIDNIGHT}; }}
-.rr-card.accent .v {{ font-size: 1.6rem; }}
+/* ---------- Statistics list ---------- */
+.rr-stats {{ list-style: none; margin: .4rem 0 2.2rem; padding: 0; }}
+.rr-stats li {{ display: flex; justify-content: space-between; align-items: baseline; gap: 2rem;
+                padding: .75rem 0; border-bottom: 1px solid {BORDER}; }}
+.rr-stats li:first-child {{ border-top: 1px solid {BORDER}; }}
+.rr-stats .k {{ color: {TEXT}; font-size: 1rem; }}
+.rr-stats .k small {{ display: block; color: {MUTED}; font-size: .88rem; margin-top: .15rem; }}
+.rr-stats .v {{ color: {MIDNIGHT}; font-size: 1.25rem; font-weight: 600; white-space: nowrap; }}
 
 /* ---------- Ranked list ---------- */
 .rr-issue {{ display: flex; gap: 18px; align-items: baseline; border-bottom: 1px solid {BORDER};
@@ -495,9 +489,6 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
             color: {MUTED}; font-size: .95rem; text-align: left; }}
 
 @media (max-width: 860px) {{
-  .rr-cards {{ grid-template-columns: repeat(2, 1fr); }}
-  .rr-card:nth-child(2) {{ border-right: none; }}
-  .rr-card:nth-child(1), .rr-card:nth-child(2) {{ border-bottom: 1px solid {BORDER}; }}
   .rr-hero h1 {{ font-size: 1.6rem; }}
   .rr-title h1 {{ font-size: 1.5rem; }}
 }}
@@ -633,23 +624,20 @@ def page_dashboard():
         <p>RoomRead reads each part of a guest review, identifies which area of the stay it refers to,
         and ranks the areas guests complain about most. The figures below are based on
         {BENCHMARK_REVIEWS:,} hotel reviews.</p>
-        <a href="check" target="_self">Check a review</a>
+        <div class="rr-cta"><a href="check" target="_self">Check a review</a></div>
       </div>
-      <div class="rr-cards">
-        <div class="rr-card"><div class="l">Reviews analysed</div>
-             <div class="v">{BENCHMARK_REVIEWS:,}</div>
-             <div class="u">TripAdvisor hotel reviews</div></div>
-        <div class="rr-card accent"><div class="l">Needs attention first</div>
-             <div class="v">{esc(top['aspect_group'])}</div>
-             <div class="u">{top['pct_of_reviews']:.1f}% of reviews complain about it</div>
-             <div class="track"><span style="width:{min(top['pct_of_reviews'], 100):.1f}%"></span></div></div>
-        <div class="rr-card"><div class="l">Areas tracked</div>
-             <div class="v">{len(df)}</div>
-             <div class="u">{esc(', '.join(df['aspect_group'].head(3)))} and {len(df) - 3} more</div></div>
-        <div class="rr-card"><div class="l">Model accuracy</div>
-             <div class="v">{best['Accuracy'] * 100:.1f}%</div>
-             <div class="u">Fine-tuned RoBERTa, macro-F1 {best['Macro-F1']:.2f}</div></div>
-      </div>""")
+      <ul class="rr-stats">
+        <li><span class="k">Reviews analysed<small>TripAdvisor hotel reviews</small></span>
+            <span class="v">{BENCHMARK_REVIEWS:,}</span></li>
+        <li><span class="k">Needs attention first<small>{top['pct_of_reviews']:.1f}% of reviews
+            complain about it</small></span>
+            <span class="v">{esc(top['aspect_group'])}</span></li>
+        <li><span class="k">Areas tracked<small>{esc(', '.join(df['aspect_group']))}</small></span>
+            <span class="v">{len(df)}</span></li>
+        <li><span class="k">Model accuracy<small>Fine-tuned RoBERTa, macro-F1
+            {best['Macro-F1']:.2f}</small></span>
+            <span class="v">{best['Accuracy'] * 100:.1f}%</span></li>
+      </ul>""")
 
     left, right = st.columns([1.35, 1], gap="large")
     with left:
@@ -935,21 +923,18 @@ def page_file():
     skipped = f"{res['rejected']} rows skipped" if res["rejected"] else "No rows skipped"
 
     gap = top["pct_of_reviews"] - bench_map.get(top["aspect_group"], 0.0)
-    st.html(f"""<div class="rr-cards">
-        <div class="rr-card"><div class="l">Your reviews analysed</div>
-             <div class="v">{n:,}</div>
-             <div class="u">{esc(skipped)}</div></div>
-        <div class="rr-card accent"><div class="l">Needs attention first</div>
-             <div class="v">{esc(top['aspect_group'])}</div>
-             <div class="u">{top['pct_of_reviews']:.1f}% of your reviews complain about it</div>
-             <div class="track"><span style="width:{min(top['pct_of_reviews'], 100):.1f}%"></span></div></div>
-        <div class="rr-card"><div class="l">Against all reviews</div>
-             <div class="v">{gap:+.1f} pts</div>
-             <div class="u">on {esc(top['aspect_group'].lower())}, vs {bench_map.get(top['aspect_group'], 0.0):.1f}% overall</div></div>
-        <div class="rr-card"><div class="l">Comments found</div>
-             <div class="v">{len(pred):,}</div>
-             <div class="u">across {len(rk)} areas of the stay</div></div>
-      </div>""")
+    st.html(f"""<ul class="rr-stats">
+        <li><span class="k">Your reviews analysed<small>{esc(skipped)}</small></span>
+            <span class="v">{n:,}</span></li>
+        <li><span class="k">Needs attention first<small>{top['pct_of_reviews']:.1f}% of your reviews
+            complain about it</small></span>
+            <span class="v">{esc(top['aspect_group'])}</span></li>
+        <li><span class="k">Against all reviews<small>on {esc(top['aspect_group'].lower())}, against
+            {bench_map.get(top['aspect_group'], 0.0):.1f}% overall</small></span>
+            <span class="v">{gap:+.1f} pts</span></li>
+        <li><span class="k">Comments found<small>across {len(rk)} areas of the stay</small></span>
+            <span class="v">{len(pred):,}</span></li>
+      </ul>""")
 
     left, right = st.columns([1.35, 1], gap="large")
     with left:
