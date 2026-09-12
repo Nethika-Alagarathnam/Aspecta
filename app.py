@@ -381,7 +381,10 @@ html, body, .stApp, .stApp *, [data-testid="stSidebar"] * {{
 [data-testid="stIconMaterial"], .material-symbols-rounded, span[class*="material"] {{
     font-family: "Material Symbols Rounded" !important; }}
 .stApp {{ background: {PAGE_BG}; }}
-.block-container {{ max-width: 1080px; padding-top: 3.4rem; padding-bottom: 1rem; }}
+.block-container {{ max-width: none; padding: 3.2rem 3.5rem 1rem; }}
+@media (max-width: 640px) {{ .block-container {{ padding: 3rem 1.1rem 1rem; }} }}
+/* keep running text readable even on a wide screen */
+.rr-title p, .rr-hero p {{ max-width: 100ch; }}
 p, li, label {{ font-size: 1.02rem; }}
 
 /* ---------- Widgets ---------- */
@@ -400,6 +403,7 @@ button[data-variant="pills"]:hover {{ border-color: {MIDNIGHT} !important; color
 
 /* ---------- Top bar ---------- */
 header[data-testid="stHeader"] {{ background: {MIDNIGHT} !important; }}
+header[data-testid="stHeader"] .rc-overflow {{ flex: 1 1 auto !important; justify-content: center; }}
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] {{ border-radius: 0; }}
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] p,
 header[data-testid="stHeader"] a[data-testid="stTopNavLink"] span:not([data-testid="stIconMaterial"]) {{
@@ -482,9 +486,8 @@ section[data-testid="stSidebar"] a[data-testid="stSidebarNavLink"][aria-current=
 .rr-step p {{ color: {TEXT}; margin: .25rem 0 0; font-size: .98rem; line-height: 1.55; }}
 
 /* ---------- Footer ---------- */
-.rr-foot {{ margin-top: 2.6rem; border-top: 1px solid {BORDER}; padding: 1.1rem 0 .4rem;
-            color: {MUTED}; font-size: .95rem; display: flex; justify-content: space-between;
-            flex-wrap: wrap; gap: .4rem; }}
+.rr-foot {{ margin-top: 3rem; border-top: 1px solid {BORDER}; padding: 1.1rem 0 .5rem;
+            color: {MUTED}; font-size: .95rem; text-align: left; }}
 
 @media (max-width: 860px) {{
   .rr-cards {{ grid-template-columns: repeat(2, 1fr); }}
@@ -516,10 +519,7 @@ def page_title(title, text):
 
 
 def footer():
-    st.html("""<div class="rr-foot">
-        <span>RoomRead &mdash; aspect-based sentiment analysis for hotel reviews</span>
-        <span>Nethika Alagarathnam, 2026</span>
-      </div>""")
+    st.html('<div class="rr-foot">2026 &copy; RoomRead</div>')
 
 
 def plotly_base(fig, height):
@@ -528,7 +528,8 @@ def plotly_base(fig, height):
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="Times New Roman, Times, serif", size=14, color=TEXT),
         hoverlabel=dict(font_family="Times New Roman, Times, serif"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
+        legend=dict(orientation="h", yanchor="bottom", y=1.0, x=0, title=None,
+                    font=dict(size=13), bgcolor="rgba(0,0,0,0)"),
     )
     return fig
 
@@ -537,27 +538,61 @@ def show_chart(fig):
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 
-def area_bar_chart(df, benchmark=None):
-    d = df.iloc[::-1]
+AXIS = dict(showgrid=False, zeroline=False, showline=False, ticks="")
+
+
+def lollipop_chart(df):
+    """Rank-ordered dot plot: a thin rule to each area's value, with the value printed at the dot."""
+    d = df.iloc[::-1].reset_index(drop=True)
     fig = go.Figure()
-    if benchmark is not None:
-        fig.add_bar(y=d["aspect_group"], x=[benchmark.get(a, 0) for a in d["aspect_group"]], orientation="h",
-                    name=f"All {BENCHMARK_REVIEWS:,} reviews", marker_color=LIGHT_BLUE,
-                    hovertemplate="%{y}: %{x:.1f}%<extra>All reviews</extra>")
-        fig.add_bar(y=d["aspect_group"], x=d["pct_of_reviews"], orientation="h", name="Your reviews",
-                    marker_color=TEAL, hovertemplate="%{y}: %{x:.1f}%<extra>Your reviews</extra>")
-        fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.06)
-    else:
-        fig.add_bar(y=d["aspect_group"], x=d["pct_of_reviews"], orientation="h",
-                    marker_color=[TIER_COLOURS[tier(p)] for p in d["pct_of_reviews"]],
-                    text=[f"{p:.1f}%" for p in d["pct_of_reviews"]], textposition="outside",
-                    cliponaxis=False, showlegend=False,
-                    hovertemplate="%{y}: %{x:.1f}% of reviews<extra></extra>")
-        fig.update_layout(bargap=0.35)
-    fig.update_layout(xaxis=dict(ticksuffix="%", gridcolor="#E6F0F3", zeroline=False,
-                                 range=[0, max(df["pct_of_reviews"].max() * 1.18, 10)]),
-                      yaxis=dict(automargin=True))
-    return plotly_base(fig, 380)
+    for _, r in d.iterrows():
+        fig.add_shape(type="line", x0=0, x1=r["pct_of_reviews"], y0=r["aspect_group"], y1=r["aspect_group"],
+                      line=dict(color=BORDER, width=1.4), layer="below")
+    fig.add_scatter(
+        x=d["pct_of_reviews"], y=d["aspect_group"], mode="markers+text",
+        marker=dict(size=[16 if p >= 40 else 13 for p in d["pct_of_reviews"]],
+                    color=[MIDNIGHT if p >= 40 else TEAL for p in d["pct_of_reviews"]],
+                    line=dict(color="#FFFFFF", width=2)),
+        text=[f"  {p:.1f}%" for p in d["pct_of_reviews"]], textposition="middle right",
+        textfont=dict(size=14, color=MIDNIGHT), cliponaxis=False, showlegend=False,
+        hovertemplate="%{y}<br>%{x:.1f}% of reviews contain a complaint<extra></extra>")
+    fig.update_layout(
+        xaxis=dict(range=[0, max(df["pct_of_reviews"].max() * 1.32, 10)], visible=False, **AXIS),
+        yaxis=dict(automargin=True, tickfont=dict(size=14, color=TEXT), **AXIS))
+    return plotly_base(fig, 40 + 44 * len(d))
+
+
+def dumbbell_compare_chart(df, benchmark):
+    """Your value and the benchmark joined by a rule, so the gap is the message."""
+    d = df.iloc[::-1].reset_index(drop=True)
+    bench_vals = [benchmark.get(a, 0.0) for a in d["aspect_group"]]
+    fig = go.Figure()
+    for area, mine, base in zip(d["aspect_group"], d["pct_of_reviews"], bench_vals):
+        fig.add_shape(type="line", x0=base, x1=mine, y0=area, y1=area,
+                      line=dict(color="#C2D6DE", width=2), layer="below")
+    fig.add_scatter(x=bench_vals, y=d["aspect_group"], mode="markers", name="All reviews",
+                    marker=dict(size=13, color="#FFFFFF", line=dict(color=MUTED, width=2)),
+                    hovertemplate="%{y}<br>%{x:.1f}%<extra>All reviews</extra>")
+    fig.add_scatter(x=d["pct_of_reviews"], y=d["aspect_group"], mode="markers+text", name="Your reviews",
+                    marker=dict(size=14, color=[MIDNIGHT if m >= b else TEAL
+                                                for m, b in zip(d["pct_of_reviews"], bench_vals)],
+                                line=dict(color="#FFFFFF", width=2)),
+                    text=[(f"  {m - b:+.1f}" if m >= b else f"{m - b:+.1f}  ")
+                          for m, b in zip(d["pct_of_reviews"], bench_vals)],
+                    textposition=["middle right" if m >= b else "middle left"
+                                  for m, b in zip(d["pct_of_reviews"], bench_vals)],
+                    textfont=dict(size=13, color=MUTED), cliponaxis=False,
+                    hovertemplate="%{y}<br>%{x:.1f}%<extra>Your reviews</extra>")
+    hi = max(max(d["pct_of_reviews"]), max(bench_vals)) * 1.25
+    fig.update_layout(
+        xaxis=dict(range=[-max(hi, 10) * 0.10, max(hi, 10)], ticksuffix="%", showgrid=True, gridcolor="#F0F4F6",
+                   zeroline=False, showline=False, ticks="", tickfont=dict(size=13, color=MUTED)),
+        yaxis=dict(automargin=True, tickfont=dict(size=14, color=TEXT), **AXIS))
+    return plotly_base(fig, 60 + 46 * len(d))
+
+
+def area_bar_chart(df, benchmark=None):
+    return dumbbell_compare_chart(df, benchmark) if benchmark is not None else lollipop_chart(df)
 
 
 def ranking_table(df, key):
@@ -606,7 +641,8 @@ def page_dashboard():
     with left:
         st.html('<div class="rr-h">Complaints by area</div>')
         show_chart(area_bar_chart(df))
-        st.caption("Percentage of reviews with at least one negative comment about each area.")
+        st.caption("Each dot is the share of reviews containing at least one negative comment "
+                   "about that area. Areas above 40% are marked in navy.")
     with right:
         st.html('<div class="rr-h">Top 3 to fix</div>')
         top_issues(df)
@@ -894,6 +930,8 @@ def page_file():
     left, right = st.columns([1.35, 1], gap="large")
     with left:
         st.html('<div class="rr-h">Your reviews compared with all reviews</div>')
+        st.caption("Hollow dot: all 31,219 reviews. Solid dot: your reviews. The number is the "
+                   "difference in percentage points; navy means worse than average.")
         show_chart(area_bar_chart(rk, benchmark=bench_map))
     with right:
         st.html('<div class="rr-h">Top 3 to fix</div>')
@@ -916,16 +954,29 @@ def page_file():
 def page_model():
     page_title("Model results", "Three models were tested on 1,692 hand-labelled examples from the OATS-Hotels "
                                 "dataset. Fine-tuned RoBERTa did best and is the one used in this app.")
+    d = MODEL_RESULTS.iloc[::-1].reset_index(drop=True)
     fig = go.Figure()
-    fig.add_bar(x=MODEL_RESULTS["Model"], y=MODEL_RESULTS["Accuracy"], name="Accuracy", marker_color=MIDNIGHT,
-                text=[f"{v:.3f}" for v in MODEL_RESULTS["Accuracy"]], textposition="outside")
-    fig.add_bar(x=MODEL_RESULTS["Model"], y=MODEL_RESULTS["Macro-F1"], name="Macro-F1", marker_color=TEAL,
-                text=[f"{v:.3f}" for v in MODEL_RESULTS["Macro-F1"]], textposition="outside")
-    fig.update_layout(barmode="group", bargap=0.3, yaxis=dict(range=[0, 1.08], gridcolor="#E6F0F3"))
+    for _, r in d.iterrows():
+        fig.add_shape(type="line", x0=r["Macro-F1"], x1=r["Accuracy"], y0=r["Model"], y1=r["Model"],
+                      line=dict(color="#C2D6DE", width=2), layer="below")
+    fig.add_scatter(x=d["Macro-F1"], y=d["Model"], mode="markers+text", name="Macro-F1",
+                    marker=dict(size=14, color=TEAL, line=dict(color="#FFFFFF", width=2)),
+                    text=[f"{v:.3f}" for v in d["Macro-F1"]], textposition="top center",
+                    textfont=dict(size=13, color=TEAL), cliponaxis=False,
+                    hovertemplate="%{y}<br>macro-F1 %{x:.3f}<extra></extra>")
+    fig.add_scatter(x=d["Accuracy"], y=d["Model"], mode="markers+text", name="Accuracy",
+                    marker=dict(size=14, color=MIDNIGHT, line=dict(color="#FFFFFF", width=2)),
+                    text=[f"{v:.3f}" for v in d["Accuracy"]], textposition="top center",
+                    textfont=dict(size=13, color=MIDNIGHT), cliponaxis=False,
+                    hovertemplate="%{y}<br>accuracy %{x:.3f}<extra></extra>")
+    fig.update_layout(
+        xaxis=dict(range=[0.6, 0.98], showgrid=True, gridcolor="#F0F4F6", zeroline=False, showline=False,
+                   ticks="", tickfont=dict(size=13, color=MUTED)),
+        yaxis=dict(automargin=True, tickfont=dict(size=14, color=TEXT), **AXIS))
 
     left, right = st.columns([1.4, 1], gap="large")
     with left:
-        show_chart(plotly_base(fig, 360))
+        show_chart(plotly_base(fig, 330))
     with right:
         st.html(f"""<div class="rr-h">Good to know</div>
           <div class="rr-issue"><div><b>Accuracy</b><p>How many predictions were right overall. It looks high
